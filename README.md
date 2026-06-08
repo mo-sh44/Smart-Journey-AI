@@ -315,19 +315,13 @@ Sicherer Einzeltest:
 python src/test_bluesky_source.py
 ```
 
-BlueSky wird auch im alten Komplett-Test angesprochen:
+Die Datei `src/test_apis.py` ist jetzt nur noch eine sichere Test-Uebersicht:
 
 ```powershell
 python src/test_apis.py
 ```
 
-Aber Vorsicht:
-
-```text
-test_apis.py testet auch E-Mail und Google Calendar.
-Das kann echte Aktionen ausloesen.
-Fuer die Zwischenpraesentation lieber einzelne sichere Tests verwenden.
-```
+Sie fuehrt keine API-Aktionen automatisch aus, sondern zeigt die empfohlenen Einzeltests an.
 
 Sicherer BlueSky-Test waere:
 
