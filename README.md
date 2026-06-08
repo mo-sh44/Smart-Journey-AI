@@ -21,7 +21,7 @@ Smart Journey AI soll daraus:
 
 ## Aktueller Stand
 
-Dieser Stand ist fuer die Review-Session mit dem Dozenten vorbereitet. Ziel ist zu zeigen, dass nicht nur die Idee existiert, sondern bereits ein lauffaehiger MVP, praktische API-Tests und eine begruendete Risikoanalyse vorhanden sind.
+Dieser Stand dokumentiert den aktuellen technischen Fortschritt: lauffaehiger MVP, praktische API-Tests und begruendete Risikoanalyse.
 
 Bereits umgesetzt:
 

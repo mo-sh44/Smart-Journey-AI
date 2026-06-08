@@ -1,6 +1,6 @@
 # Smart Journey AI - API- und MVP-Plan
 
-## Erwartung des Dozenten
+## Projektanforderungen
 
 Der naechste Projektstand soll zeigen, dass die technische Machbarkeit praktisch geprueft wurde. Besonders wichtig sind:
 
@@ -82,7 +82,7 @@ Warum gut fuer MVP:
 
 - klar testbar
 - gut erklaerbar
-- passt direkt zum Dozentenfeedback "APIs frueh testen"
+- passt direkt zur Anforderung, APIs frueh praktisch zu testen
 
 Erfolgskriterium:
 
