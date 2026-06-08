@@ -19,16 +19,19 @@ Smart Journey AI soll daraus:
 - einen ersten Reisevorschlag erstellen
 - spaeter Flug-, Hotel-, Kalender-, E-Mail- und BlueSky-Funktionen anbinden
 
-## Aktueller MVP-Stand
+## Aktueller Stand
 
-Fuer die Zwischenpraesentation funktioniert:
+Dieser Stand ist fuer die Review-Session mit dem Dozenten vorbereitet. Ziel ist zu zeigen, dass nicht nur die Idee existiert, sondern bereits ein lauffaehiger MVP, praktische API-Tests und eine begruendete Risikoanalyse vorhanden sind.
+
+Bereits umgesetzt:
 
 - Streamlit-App mit heller, gut lesbarer Oberflaeche
 - Demo mode ohne OpenAI-Kosten
 - echte Wetter-API ueber Visual Crossing
-- OpenAI Assistant Setup ist vorbereitet
-- Flugquelle getestet, aber als instabil bewertet
-- Hotelquelle getestet, aber als instabil bewertet
+- OpenAI Assistant wurde eingerichtet
+- Flugquelle wurde getestet, aber als instabil bewertet
+- Hotelquelle wurde getestet, aber als instabil bewertet
+- BlueSky-Service ist vorbereitet und kann letzte Posts abrufen
 - API-Testlog und MVP-Plan dokumentiert
 
 Der MVP ist bewusst angepasst:
@@ -38,6 +41,19 @@ Wetterdaten sind live.
 Flug- und Hoteldaten werden vorerst als Risiko dokumentiert.
 OpenAI Assistant ist eingerichtet, aber bei API-Quota/Billing kann Demo mode genutzt werden.
 ```
+
+## Geplante Erweiterungen
+
+Fuer die Endpraesentation sind diese Erweiterungen geplant:
+
+- stabilere Flugquelle ueber offizielle API statt Swoodoo-Scraping
+- stabilere Hotelquelle ueber offizielle API statt Booking.com-Scraping
+- Google-Calendar-Test mit echten freien Zeitraeumen
+- BlueSky-Personalisierung durch Analyse der letzten Posts
+- optionale BlueSky-Veröffentlichung nach Nutzerbestätigung
+- E-Mail-Versand mit Kalenderdatei nach finaler Auswahl
+- bessere Fehlerbehandlung fuer alle externen APIs
+- klarere Trennung zwischen Live-Daten und Fallback-Daten
 
 ## Projektstruktur
 
@@ -185,6 +201,35 @@ HTTP 202 liefert keine direkt verwertbaren Hotelkarten.
 Fuer die Zwischenpraesentation wird Hotel-Live-Datenzugriff nicht als kritischer MVP-Teil verwendet.
 ```
 
+### BlueSky-Quelle testen
+
+Vorher `.env` ausfuellen:
+
+```env
+BLUESKY_USERNAME=
+BLUESKY_PASSWORD=
+```
+
+Dann ausfuehren:
+
+```powershell
+python src/test_bluesky_source.py
+```
+
+Erwartetes Ergebnis:
+
+```text
+BlueSky source works.
+Fetched posts: 3
+```
+
+Bewertung:
+
+```text
+BlueSky kann fuer Personalisierung genutzt werden, wenn Zugangsdaten vorhanden sind.
+Der sichere Test liest nur Posts und veroeffentlicht nichts.
+```
+
 ## App starten
 
 ```powershell
@@ -264,7 +309,13 @@ Funktionen:
   - erstellt eine BlueSky-Session
   - veroeffentlicht einen neuen Post
 
-BlueSky wird ausserdem im alten Komplett-Test angesprochen:
+Sicherer Einzeltest:
+
+```powershell
+python src/test_bluesky_source.py
+```
+
+BlueSky wird auch im alten Komplett-Test angesprochen:
 
 ```powershell
 python src/test_apis.py
@@ -359,4 +410,3 @@ Push:
 ```powershell
 git push origin Feroza
 ```
-

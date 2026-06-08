@@ -191,7 +191,7 @@ Dateien:
 
 ```text
 src/main.py
-src/assistant/demo_mode.py
+src/core/demo_mode.py
 ```
 
 Zweck:
@@ -211,4 +211,47 @@ Bewertung:
 
 ```text
 Der Demo-Modus ist fuer den MVP geeignet, weil er eine echte API nutzt und einen sichtbaren Reisevorschlag in der App erzeugt.
+```
+
+## Test 4: BlueSky-Quelle
+
+Status: vorbereitet
+
+Testdatei:
+
+```text
+src/test_bluesky_source.py
+```
+
+Zweck:
+
+- BlueSky-Login testen
+- letzte Posts des Accounts abrufen
+- Posts lokal in `data/social_posts.json` speichern
+- spaeter als Personalisierungsdaten fuer RAG / File Search verwenden
+
+Voraussetzung:
+
+```env
+BLUESKY_USERNAME=
+BLUESKY_PASSWORD=
+```
+
+Sicherer Test:
+
+```powershell
+python src/test_bluesky_source.py
+```
+
+Hinweis:
+
+```text
+Dieser Test liest nur Posts. Er veroeffentlicht nichts.
+```
+
+Bewertung:
+
+```text
+Noch nicht live getestet, weil BlueSky-Zugangsdaten in .env aktuell nicht gesetzt sind.
+Wenn Zugangsdaten vorhanden sind, kann BlueSky als Personalisierungsquelle getestet werden.
 ```

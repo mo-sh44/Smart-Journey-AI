@@ -36,12 +36,12 @@ with st.sidebar:
     st.divider()
     st.markdown("### How it works")
     st.markdown(
-        "1. Tell me where to go\n"
-        "2. I check your calendar\n"
-        "3. I verify the weather\n"
-        "4. I find flights and hotels\n"
-        "5. You get a confirmation email\n"
-        "6. Trip can be shared on BlueSky"
+        "1. 💬 Tell me where to go\n"
+        "2. 📅 I check your calendar\n"
+        "3. ☀️ I verify the weather\n"
+        "4. ✈️ I find flights and hotels\n"
+        "5. 📧 You get a confirmation email\n"
+        "6. 🌐 Trip can be shared on BlueSky"
     )
     st.divider()
     mode = st.radio(
