@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# Environment
+.env
+venv/
+.venv/
+
+# Secrets
+data/token.json
+data/credentials.json
+data/social_posts.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

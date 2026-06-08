@@ -1,0 +1,10 @@
+openai~=1.57.0
+python-dotenv~=1.0.1
+streamlit~=1.40.2
+requests~=2.32.0
+beautifulsoup4~=4.12.3
+ics~=0.7.2
+atproto~=0.0.56
+protobuf~=5.29.1
+google-auth-oauthlib~=1.2.1
+google-api-python-client~=2.155.0
