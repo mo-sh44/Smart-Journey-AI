@@ -4,7 +4,6 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from ics import Calendar, Event
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -42,14 +41,24 @@ class EmailService:
 
     def _build_ics(self, event_details: dict) -> str | None:
         try:
-            cal = Calendar()
-            event = Event()
-            event.name = event_details.get("title", "Travel Plan")
-            event.begin = event_details["start"]
-            event.end = event_details["end"]
-            event.location = event_details.get("location", "")
-            event.description = event_details.get("description", "")
-            cal.events.add(event)
-            return str(cal)
+            def clean(value):
+                return str(value).replace("\\", "\\\\").replace("\n", "\\n").replace(",", "\\,").replace(";", "\\;")
+
+            start = event_details["start"].replace("-", "").replace(":", "")
+            end = event_details["end"].replace("-", "").replace(":", "")
+
+            return "\n".join([
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//Smart Journey AI//Travel Assistant//EN",
+                "BEGIN:VEVENT",
+                f"SUMMARY:{clean(event_details.get('title', 'Travel Plan'))}",
+                f"DTSTART:{start}",
+                f"DTEND:{end}",
+                f"LOCATION:{clean(event_details.get('location', ''))}",
+                f"DESCRIPTION:{clean(event_details.get('description', ''))}",
+                "END:VEVENT",
+                "END:VCALENDAR",
+            ])
         except Exception:
             return None

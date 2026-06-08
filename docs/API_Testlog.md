@@ -1,0 +1,215 @@
+# Smart Journey AI - API-Testlog
+
+## Ziel
+
+Dieses Dokument sammelt die praktischen API-Tests fuer das Projekt. Es zeigt, welche Schnittstellen funktionieren, welche Probleme auftreten und welche Entscheidung daraus fuer den MVP entsteht.
+
+## Test 1: Visual Crossing Weather API
+
+Status: erfolgreich getestet
+
+Testdatei:
+
+```text
+src/test_weather_api.py
+```
+
+Testfall:
+
+```text
+Startort: Berlin
+Reiseziel: Barcelona
+Zeitraum: 2026-07-10 bis 2026-07-14
+```
+
+Erwartetes Ergebnis:
+
+- Die API liefert Wetterdaten pro Tag.
+- Das Ergebnis enthaelt Datum, maximale Temperatur, minimale Temperatur und Wetterbedingungen.
+
+Bewertung:
+
+- Wenn der Test erfolgreich ist, wird die Wetter-API als stabile MVP-Schnittstelle genutzt.
+- Wenn der Test fehlschlaegt, werden API-Key, Request-URL und Tarifgrenzen geprueft.
+
+Ergebnis:
+
+```text
+Erfolgreich getestet am 2026-06-08.
+
+Startort: Berlin
+Reiseziel: Barcelona
+Zeitraum: 2026-07-10 bis 2026-07-14
+
+Rueckgabe:
+- 2026-07-10: 25.2 C max, 23.8 C min, Partially cloudy
+- 2026-07-11: 25.3 C max, 23.9 C min, Partially cloudy
+- 2026-07-12: 25.4 C max, 24.0 C min, Partially cloudy
+- 2026-07-13: 25.4 C max, 24.1 C min, Partially cloudy
+- 2026-07-14: 25.5 C max, 24.1 C min, Partially cloudy
+
+Bewertung:
+Die Wetter-API funktioniert und kann fuer den MVP verwendet werden.
+```
+
+## Test 1a: OpenAI Assistant Setup
+
+Status: erfolgreich getestet
+
+Setup-Datei:
+
+```text
+src/assistant/crateAssistant.py
+```
+
+Zweck:
+
+- OpenAI Assistant fuer Smart Journey AI erstellen
+- Tool Calling aktivieren
+- lokale Nutzerdaten fuer RAG / File Search hochladen
+- Vector Store fuer Nutzerkontext erstellen
+- Conversation Thread erstellen
+- `ASSISTANT_ID` und `THREAD_ID` automatisch in `.env` speichern
+
+Hinweis:
+
+Die OpenAI Assistants API ist laut offizieller OpenAI-Dokumentation deprecated und soll am 2026-08-26 abgeschaltet werden. Fuer den aktuellen Projektzeitraum kann sie als bestehender Projektstand genutzt werden. Als technische Weiterentwicklung waere eine Migration zur Responses API sinnvoll.
+
+Ergebnis:
+
+```text
+Erfolgreich getestet am 2026-06-08.
+
+Ausgabe:
+- User_Description.pdf wurde fuer RAG hochgeladen.
+- user_posts.json wurde fuer RAG hochgeladen.
+- Vector Store fuer Nutzerkontext wurde erstellt.
+- OpenAI Assistant wurde erstellt.
+- Conversation Thread wurde erstellt.
+- ASSISTANT_ID und THREAD_ID wurden automatisch in .env gespeichert.
+
+Bewertung:
+Der OpenAI Assistant ist eingerichtet und kann als Agentensteuerung fuer den MVP verwendet werden.
+```
+
+## Test 2: Flugquelle
+
+Status: getestet, nicht stabil genug fuer MVP-Live-Daten
+
+Testdatei:
+
+```text
+src/test_flight_source.py
+```
+
+Testfall:
+
+```text
+Route: BER nach BCN
+Zeitraum: 2026-07-10 bis 2026-07-14
+Personen: 1
+```
+
+Aktueller Ansatz:
+
+- Swoodoo-Scraping im bestehenden Code
+
+Risiko:
+
+- HTML-Scraping kann instabil sein.
+- Webseiten koennen Zugriffe blockieren.
+
+MVP-Entscheidung:
+
+```text
+Getestet am 2026-06-09.
+
+Ausgabe:
+- Swoodoo-URL wurde erzeugt.
+- HTTP-Zugriff war moeglich.
+- Die erwarteten Flugdaten konnten aus dem HTML nicht extrahiert werden.
+- Ergebnis: "Es gibt keine Fluege."
+
+Bewertung:
+Die Flugquelle ist fuer eine stabile Live-Demo nicht geeignet, weil sie ueber HTML-Scraping funktioniert und keine verlaesslichen Daten geliefert hat.
+
+MVP-Entscheidung:
+Fuer die Zwischenpraesentation werden keine echten Flug-Live-Daten als kritischer Bestandteil verwendet.
+Falls Flugoptionen gezeigt werden, dann als Beispiel-/Fallback-Daten.
+```
+
+## Test 3: Hotelquelle
+
+Status: getestet, nicht stabil genug fuer MVP-Live-Daten
+
+Testdatei:
+
+```text
+src/test_hotel_source.py
+```
+
+Testfall:
+
+```text
+Stadt: Barcelona
+Zeitraum: 2026-07-10 bis 2026-07-14
+Erwachsene: 1
+Zimmer: 1
+```
+
+Aktueller Ansatz:
+
+- Booking.com-Scraping im bestehenden Code
+
+Risiko:
+
+- HTML-Struktur kann sich aendern.
+- Zugriff kann blockiert werden.
+
+MVP-Entscheidung:
+
+```text
+Getestet am 2026-06-09.
+
+Ausgabe:
+- Booking.com-URL wurde erzeugt.
+- Die Quelle antwortete mit HTTP 202.
+- Es wurden keine verwertbaren Hotelkarten extrahiert.
+
+Bewertung:
+Die Hotelquelle ist fuer eine stabile Live-Demo nicht geeignet, weil Booking.com ueber Scraping abgefragt wird und keine direkt verwertbare HTML-Antwort geliefert hat.
+
+MVP-Entscheidung:
+Fuer die Zwischenpraesentation werden keine echten Hotel-Live-Daten als kritischer Bestandteil verwendet.
+Falls Hoteloptionen gezeigt werden, dann als Beispiel-/Fallback-Daten.
+```
+
+## Demo-Modus fuer Zwischenpraesentation
+
+Status: umgesetzt
+
+Dateien:
+
+```text
+src/main.py
+src/assistant/demo_mode.py
+```
+
+Zweck:
+
+- stabile Live-Demo ohne OpenAI-API-Kosten
+- echte Wetterdaten ueber Visual Crossing API
+- einfacher Reisevorschlag fuer Berlin nach Barcelona
+- Fallback, falls OpenAI API durch Quota/Billing blockiert ist
+
+Demo-Anfrage:
+
+```text
+Ich plane eine Reise von Berlin nach Barcelona vom 10.07.2026 bis 14.07.2026. Bitte pruefe das Wetter und erstelle einen kurzen Reisevorschlag.
+```
+
+Bewertung:
+
+```text
+Der Demo-Modus ist fuer den MVP geeignet, weil er eine echte API nutzt und einen sichtbaren Reisevorschlag in der App erzeugt.
+```
