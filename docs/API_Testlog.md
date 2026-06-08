@@ -42,11 +42,11 @@ Reiseziel: Barcelona
 Zeitraum: 2026-07-10 bis 2026-07-14
 
 Rueckgabe:
-- 2026-07-10: 25.2 C max, 23.8 C min, Partially cloudy
-- 2026-07-11: 25.3 C max, 23.9 C min, Partially cloudy
-- 2026-07-12: 25.4 C max, 24.0 C min, Partially cloudy
-- 2026-07-13: 25.4 C max, 24.1 C min, Partially cloudy
-- 2026-07-14: 25.5 C max, 24.1 C min, Partially cloudy
+- 2026-07-10: 23.8 C min, 25.2 C max, Partially cloudy
+- 2026-07-11: 23.9 C min, 25.3 C max, Partially cloudy
+- 2026-07-12: 24.0 C min, 25.4 C max, Partially cloudy
+- 2026-07-13: 24.1 C min, 25.4 C max, Partially cloudy
+- 2026-07-14: 24.1 C min, 25.5 C max, Partially cloudy
 
 Bewertung:
 Die Wetter-API funktioniert und kann fuer den MVP verwendet werden.
@@ -125,10 +125,9 @@ MVP-Entscheidung:
 Getestet am 2026-06-09.
 
 Ausgabe:
-- Swoodoo-URL wurde erzeugt.
-- HTTP-Zugriff war moeglich.
-- Die erwarteten Flugdaten konnten aus dem HTML nicht extrahiert werden.
-- Ergebnis: "Es gibt keine Fluege."
+- Swoodoo-Scraping wurde fuer BER nach BCN getestet.
+- Die erwarteten Flugdaten konnten nicht extrahiert werden.
+- Ergebnis: "No flights found for this route."
 
 Bewertung:
 Die Flugquelle ist fuer eine stabile Live-Demo nicht geeignet, weil sie ueber HTML-Scraping funktioniert und keine verlaesslichen Daten geliefert hat.
@@ -172,7 +171,7 @@ MVP-Entscheidung:
 Getestet am 2026-06-09.
 
 Ausgabe:
-- Booking.com-URL wurde erzeugt.
+- Booking.com-Scraping wurde fuer Barcelona getestet.
 - Die Quelle antwortete mit HTTP 202.
 - Es wurden keine verwertbaren Hotelkarten extrahiert.
 
