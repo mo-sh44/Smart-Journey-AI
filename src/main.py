@@ -34,8 +34,15 @@ div[data-testid="stButton"] > button:hover {
 with st.sidebar:
     st.markdown("<h2 style='color:#1f4e79;'>Smart Journey AI</h2><p style='color:#5f6f89;font-size:0.9rem;'>AI-powered travel planning</p>", unsafe_allow_html=True)
     st.divider()
-    st.markdown("### Workflow")
-    st.markdown("1. Enter travel request\n2. Check weather data\n3. Create travel proposal\n4. Use fallback data if APIs are unstable")
+    st.markdown("### How it works")
+    st.markdown(
+        "1. Tell me where to go\n"
+        "2. I check your calendar\n"
+        "3. I verify the weather\n"
+        "4. I find flights and hotels\n"
+        "5. You get a confirmation email\n"
+        "6. Trip can be shared on BlueSky"
+    )
     st.divider()
     mode = st.radio(
         "Mode",
@@ -48,6 +55,7 @@ with st.sidebar:
         "Ich plane eine Reise von Berlin nach Barcelona vom 10.07.2026 bis 14.07.2026.",
         "City break in Europe this summer",
         "Plan a beach holiday next month",
+        "Winter trip to the Alps",
     ]:
         if st.button(prompt, use_container_width=True, key=f"q_{prompt[:15]}"):
             st.session_state.pending = prompt
