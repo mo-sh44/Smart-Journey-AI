@@ -348,6 +348,8 @@ Wichtige Dateien:
 ```text
 docs/API_Testlog.md
 docs/API_MVP_Plan.md
+docs/Architecture_Flowchart.md
+docs/Review_Session_Checklist.md
 ```
 
 `API_Testlog.md` dokumentiert:
@@ -364,6 +366,13 @@ docs/API_MVP_Plan.md
 - API-Risiken
 - Scope-Anpassung fuer Zwischenpraesentation
 - naechste Schritte fuer Endpraesentation
+
+`Architecture_Flowchart.md` enthaelt:
+
+- Systemarchitektur als Mermaid-Flowchart
+- MVP-Ablauf
+- Pseudocode fuer Demo mode und OpenAI Assistant mode
+- Uebersicht der angebundenen Tools und Datenquellen
 
 ## Formulierung fuer die Zwischenpraesentation
 
