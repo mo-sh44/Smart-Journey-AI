@@ -1,6 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
-from core.demo_mode import create_demo_travel_plan
+from core.demo_mode import create_demo_travel_plan, create_local_ai_travel_plan
 from core.openai_handler import OpenAIHandler
 
 load_dotenv()
@@ -46,8 +46,8 @@ with st.sidebar:
     st.divider()
     mode = st.radio(
         "Mode",
-        ["Demo mode", "OpenAI Assistant"],
-        help="Demo mode uses the live weather API without OpenAI API costs.",
+        ["Local AI", "Demo mode", "OpenAI Assistant"],
+        help="Local AI uses Ollama on localhost. Demo mode is a deterministic fallback.",
     )
     st.divider()
     st.markdown("### Quick Start")
@@ -79,7 +79,10 @@ def process(user_input: str):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
-    if mode == "Demo mode":
+    if mode == "Local AI":
+        with st.spinner("Checking live weather data and generating with local AI..."):
+            response = create_local_ai_travel_plan(user_input)
+    elif mode == "Demo mode":
         with st.spinner("Checking live weather data..."):
             response = create_demo_travel_plan(user_input)
     else:

@@ -6,8 +6,16 @@
 flowchart TD
     A["Nutzer gibt Reiseanfrage ein"] --> B["Streamlit Frontend"]
     B --> C{"Modus"}
+    C -->|Local AI| R["Local AI Mode"]
     C -->|Demo mode| D["Demo Mode"]
     C -->|OpenAI Assistant| E["OpenAI Assistant Handler"]
+
+    R --> F
+    F --> G
+    G --> R
+    R --> S["Ollama / lokales LLM"]
+    S --> T["KI-generierter Reisevorschlag"]
+    T --> B
 
     D --> F["WeatherService"]
     F --> G["Visual Crossing Weather API"]
@@ -66,11 +74,26 @@ flowchart LR
     G --> H["Anzeige in Streamlit"]
 ```
 
+## Local AI Ablauf
+
+```mermaid
+flowchart LR
+    A["Reiseanfrage"] --> B["Ziel und Datum extrahieren"]
+    B --> C["WeatherService"]
+    C --> D["Visual Crossing API"]
+    D --> E["Wetterdaten"]
+    E --> F["Prompt fuer lokales LLM"]
+    F --> G["Ollama / Gemma"]
+    G --> H["KI-generierter Reisevorschlag"]
+    H --> I["Anzeige in Streamlit"]
+```
+
 ## Tool- und Datenquellen
 
 | Bereich | Implementierung | Status |
 |---|---|---|
 | Wetter | Visual Crossing API | funktioniert live |
+| Lokale KI | Ollama / lokales LLM | vorbereitet |
 | OpenAI | Assistant API / Tool Calling | eingerichtet, Quota/Billing abhaengig |
 | Flug | Swoodoo-Scraping | technisch vorhanden, aber instabil |
 | Hotel | Booking.com-Scraping | technisch vorhanden, aber instabil |
@@ -81,4 +104,3 @@ flowchart LR
 ## Einordnung
 
 Der wichtigste Punkt ist nicht, dass alle externen Quellen perfekt funktionieren, sondern dass jede Quelle technisch geprueft und bewertet wurde. Fuer stabile Live-Demos wird aktuell die Wetter-API verwendet. Flug und Hotel sind als Services vorhanden, muessen fuer die Endpraesentation aber entweder ueber stabilere APIs oder ueber kontrollierte Fallback-Daten abgesichert werden.
-

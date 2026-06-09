@@ -5,6 +5,7 @@
 Smart Journey AI ist aktuell ein lauffaehiger MVP-Prototyp mit:
 
 - Streamlit-Oberflaeche
+- Local AI mode fuer KI-generierte Reisevorschlaege
 - Demo mode fuer eine stabile Live-Demo
 - echter Wetter-API ueber Visual Crossing
 - vorbereitetem OpenAI Assistant
@@ -13,7 +14,7 @@ Smart Journey AI ist aktuell ein lauffaehiger MVP-Prototyp mit:
 - dokumentierter API-Risikoanalyse
 - sicheren Einzeltests fuer externe Datenquellen
 
-Der aktuelle MVP fokussiert sich auf wetterbasierte Reiseplanung. Flug- und Hoteldaten wurden technisch geprueft, sind aber aktuell nicht stabil genug fuer eine verlaessliche Live-Demo.
+Der aktuelle MVP fokussiert sich auf wetterbasierte Reiseplanung mit KI-generierter Antwort im Local AI mode. Der Demo mode bleibt als stabiler Fallback erhalten. Flug- und Hoteldaten wurden technisch geprueft, sind aber aktuell nicht stabil genug fuer eine verlaessliche Live-Demo.
 
 ## 2. Vorfuehrbare Funktionen
 
@@ -28,7 +29,7 @@ python -m streamlit run src/main.py
 In der App:
 
 ```text
-Mode: Demo mode
+Mode: Local AI
 ```
 
 Beispielanfrage:
@@ -174,7 +175,8 @@ Risiko:
 
 Alternative:
 
-- Demo mode als stabiler Fallback ohne OpenAI-Kosten.
+- Local AI mode als KI-Demo ohne OpenAI-Kosten.
+- Demo mode als stabiler Fallback ohne LLM.
 - OpenAI Assistant als Architektur- und Tool-Calling-Komponente erklaeren.
 - Fuer die Endpraesentation ggf. API-Budget klaeren oder auf neuere OpenAI-Struktur migrieren.
 
@@ -190,8 +192,9 @@ Der aktuelle MVP wird bewusst stabil gehalten:
 
 - Wetterdaten live
 - Reisevorschlag live in der App
+- KI-generierte Antwort ueber Local AI mode
 - Flug/Hotel als dokumentierte Risikoquellen
-- Demo mode als stabile Praesentationsvariante
+- Demo mode als technische Fallback-Variante
 - OpenAI Assistant als vorbereitete Agentenkomponente
 
 Begruendung:
@@ -206,6 +209,7 @@ Deshalb wird der MVP auf die stabilen Bestandteile fokussiert und riskante Quell
 Fuer die naechste Projektphase:
 
 - BlueSky Read-Test mit App-Passwort durchfuehren
+- Local AI mode mit Ollama/Gemma lokal testen
 - BlueSky-Posts fuer Personalisierung nutzen
 - Google Calendar mit echten OAuth-Credentials testen
 - E-Mail/ICS kontrolliert mit Testempfaenger pruefen
@@ -216,7 +220,7 @@ Fuer die naechste Projektphase:
 
 ## 6. Fragen zur Scope-Abstimmung
 
-1. Reicht fuer die Zwischenpraesentation ein stabiler MVP mit echter Wetter-API, Demo mode und dokumentierten Risiken fuer Flug/Hotel?
+1. Reicht fuer die Zwischenpraesentation ein stabiler MVP mit echter Wetter-API, Local AI mode und dokumentierten Risiken fuer Flug/Hotel?
 2. Werden echte Live-Flug- und Live-Hoteldaten fuer die Zwischenpraesentation erwartet?
 3. Falls Flug/Hotel-Live-Daten nicht stabil verfuegbar sind: Sind Fallback-Daten fuer die Demo akzeptabel?
 4. Soll der Fokus eher auf Agentenlogik und Tool Calling liegen oder auf moeglichst vielen angebundenen Datenquellen?
@@ -229,8 +233,8 @@ Fuer die naechste Projektphase:
 ```text
 Smart Journey AI ist aktuell ein lauffaehiger MVP-Prototyp.
 Die Wetter-API funktioniert live und stabil.
+Der Local AI mode ist als KI-Demo ohne OpenAI-Kosten vorbereitet.
 Flug- und Hoteldaten wurden getestet, sind ueber Scraping aber nicht verlaesslich genug.
 Der MVP wurde deshalb auf stabile wetterbasierte Reiseplanung fokussiert.
 Weitere Integrationen sind vorbereitet und werden nach Machbarkeit priorisiert.
 ```
-

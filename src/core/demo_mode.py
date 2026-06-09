@@ -1,5 +1,6 @@
 import re
 
+from services.local_ai_service import LocalAIService
 from services.weather_service import WeatherService
 
 
@@ -26,6 +27,9 @@ def extract_trip_details(prompt: str):
         start_date = "2026-12-12"
         end_date = "2026-12-18"
         trip_type = "winter"
+    elif "italien" in prompt_lower or "italy" in prompt_lower:
+        destination = "Italy"
+        trip_type = "city"
 
     route_match = re.search(
         r"von\s+([A-Za-zÄÖÜäöüß\s]+?)\s+nach\s+([A-Za-zÄÖÜäöüß\s]+?)(?:\s+vom|\s+von|\s+am|\.|,|$)",
@@ -41,7 +45,9 @@ def extract_trip_details(prompt: str):
         start_date = _convert_german_date(dates[0])
         end_date = _convert_german_date(dates[1])
 
-    return departure, destination, start_date, end_date, trip_type
+    weather_location = _weather_lookup_location(destination)
+
+    return departure, destination, weather_location, start_date, end_date, trip_type
 
 
 def _convert_german_date(date_text: str) -> str:
@@ -50,8 +56,8 @@ def _convert_german_date(date_text: str) -> str:
 
 
 def create_demo_travel_plan(prompt: str) -> str:
-    departure, destination, start_date, end_date, trip_type = extract_trip_details(prompt)
-    weather = WeatherService().get_forecast(destination, start_date, end_date)
+    departure, destination, weather_location, start_date, end_date, trip_type = extract_trip_details(prompt)
+    weather = WeatherService().get_forecast(weather_location, start_date, end_date)
 
     if not weather or "could not be retrieved" in weather:
         weather = "No live weather data could be retrieved. The app can continue with fallback data for the demo."
@@ -82,6 +88,40 @@ def create_demo_travel_plan(prompt: str) -> str:
 
 Dieser Demo-Modus nutzt echte Wetterdaten. Der OpenAI Assistant ist eingerichtet, kann aber bei API-Quota- oder Billing-Problemen durch diesen stabilen Fallback ersetzt werden.
 """.strip()
+
+
+def create_local_ai_travel_plan(prompt: str) -> str:
+    departure, destination, weather_location, start_date, end_date, trip_type = extract_trip_details(prompt)
+    weather = WeatherService().get_forecast(weather_location, start_date, end_date)
+
+    trip_details = {
+        "departure": departure,
+        "destination": destination,
+        "weather_location": weather_location,
+        "start_date": start_date,
+        "end_date": end_date,
+        "trip_type": trip_type,
+    }
+
+    if not weather or "could not be retrieved" in weather:
+        weather = "No live weather data could be retrieved. Continue with a cautious planning note."
+
+    return LocalAIService().generate_travel_plan(prompt, trip_details, weather)
+
+
+def _weather_lookup_location(destination: str) -> str:
+    destination_key = destination.strip().lower()
+    location_map = {
+        "italien": "Rome",
+        "italy": "Rome",
+        "italia": "Rome",
+        "spanien": "Barcelona",
+        "spain": "Barcelona",
+        "portugal": "Lisbon",
+        "griechenland": "Athens",
+        "greece": "Athens",
+    }
+    return location_map.get(destination_key, destination)
 
 
 def _build_assessment(trip_type: str) -> str:

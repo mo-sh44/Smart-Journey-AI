@@ -26,6 +26,7 @@ Dieser Stand dokumentiert den aktuellen technischen Fortschritt: lauffaehiger MV
 Bereits umgesetzt:
 
 - Streamlit-App mit heller, gut lesbarer Oberflaeche
+- Local AI mode mit Ollama als lokaler KI-Option
 - Demo mode ohne OpenAI-Kosten
 - echte Wetter-API ueber Visual Crossing
 - OpenAI Assistant wurde eingerichtet
@@ -38,6 +39,7 @@ Der MVP ist bewusst angepasst:
 
 ```text
 Wetterdaten sind live.
+Local AI mode nutzt ein lokales Modell fuer dynamisch generierte Reisevorschlaege.
 Flug- und Hoteldaten werden vorerst als Risiko dokumentiert.
 OpenAI Assistant ist eingerichtet, aber bei API-Quota/Billing kann Demo mode genutzt werden.
 ```
@@ -123,6 +125,8 @@ OPENAI_API_KEY=
 ASSISTANT_ID=
 THREAD_ID=
 VISUAL_CROSSING_API_KEY=
+LOCAL_LLM_URL=http://localhost:11434
+LOCAL_LLM_MODEL=gemma3:4b
 BLUESKY_USERNAME=
 BLUESKY_PASSWORD=
 GOOGLE_CREDENTIALS_PATH=./data/credentials.json
@@ -245,7 +249,7 @@ http://localhost:8501
 Fuer die Zwischenpraesentation links in der Sidebar auswaehlen:
 
 ```text
-Demo mode
+Local AI
 ```
 
 Beispiel-Prompt:
@@ -263,6 +267,38 @@ Winter trip to the Alps
 ```
 
 Diese Quickstarts erzeugen unterschiedliche Demo-Szenarien.
+
+## Lokale KI mit Ollama
+
+Der Local AI mode ist dafuer gedacht, KI-Einsatz ohne OpenAI-API-Kosten zu zeigen.
+
+Voraussetzung:
+
+```text
+Ollama muss lokal laufen.
+Das Modell aus LOCAL_LLM_MODEL muss installiert sein.
+```
+
+Beispiel:
+
+```powershell
+ollama pull gemma3:4b
+ollama serve
+```
+
+Danach die App starten:
+
+```powershell
+python -m streamlit run src/main.py
+```
+
+In der Sidebar:
+
+```text
+Mode: Local AI
+```
+
+Wenn Ollama nicht laeuft, zeigt die App eine Fehlermeldung und der Demo mode kann weiter als Fallback genutzt werden.
 
 ## OpenAI Assistant einrichten
 
