@@ -54,7 +54,7 @@ Die Wetter-API funktioniert und kann fuer den MVP verwendet werden.
 
 ## Test 1a: OpenAI Assistant Setup
 
-Status: erfolgreich getestet
+Status: erfolgreich eingerichtet und live getestet
 
 Setup-Datei:
 
@@ -90,6 +90,22 @@ Ausgabe:
 
 Bewertung:
 Der OpenAI Assistant ist eingerichtet und kann als Agentensteuerung fuer den MVP verwendet werden.
+```
+
+Live-Test:
+
+```text
+Getestet mit einer Reiseanfrage von Berlin nach Barcelona fuer den Zeitraum 2026-07-10 bis 2026-07-14.
+
+Ergebnis:
+- Der Assistant hat die Anfrage verarbeitet.
+- Die Wetterdaten fuer Barcelona wurden korrekt eingebunden.
+- Der Assistant hat einen Reisevorschlag erzeugt.
+- Flug- und Hotelsuche wurden aufgerufen bzw. beruecksichtigt, lieferten aber keine verwertbaren Live-Daten.
+
+Bewertung:
+Der OpenAI Assistant Mode funktioniert grundsaetzlich.
+Die verbleibende technische Schwachstelle liegt nicht mehr beim Assistant, sondern bei den Flug- und Hotelquellen.
 ```
 
 ## Test 2: Flugquelle
