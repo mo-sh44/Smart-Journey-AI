@@ -54,12 +54,15 @@ class HotelService:
             price = card.find("span", {"data-testid": "price-and-discounted-price", "aria-hidden": "true"})
             rating = card.find("span", {"data-testid": "review-score", "aria-hidden": "true"})
             distance = card.find("span", {"data-testid": "distance"})
-            results.append(
-                f"Hotel {i}: {name.text.strip() if name else 'N/A'} | "
-                f"Price: {price.text.strip() if price else 'N/A'} | "
-                f"Rating: {rating.text.strip() if rating else 'N/A'} | "
-                f"Distance: {distance.text.strip() if distance else 'N/A'}"
-            )
+            fields = [
+                f"Hotel {i}: {name.text.strip() if name else 'Name nicht gefunden'}",
+                f"Preis: {price.text.strip() if price else 'Preis nicht gefunden'}",
+            ]
+            if rating:
+                fields.append(f"Bewertung: {rating.text.strip()}")
+            if distance:
+                fields.append(f"Entfernung: {distance.text.strip()}")
+            results.append(" | ".join(fields))
         return "\n".join(results)
 
     def _search_with_browser(self, url: str) -> str:

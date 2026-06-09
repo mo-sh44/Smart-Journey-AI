@@ -13,6 +13,7 @@ venv/
 data/token.json
 data/credentials.json
 data/social_posts.json
+debug/
 
 # IDE
 .idea/
