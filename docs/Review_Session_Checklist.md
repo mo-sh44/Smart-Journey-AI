@@ -108,7 +108,7 @@ python src/test_hotel_source.py
 Aktuelles Ergebnis:
 
 ```text
-Hotel search failed (HTTP 202).
+Booking.com liefert echte Hoteloptionen fuer Barcelona.
 ```
 
 Risiko:
@@ -125,6 +125,12 @@ Alternative:
 - Dadurch kann die Booking.com-Seite gerendert werden, wenn der normale Request keine Hotelkarten liefert.
 - Falls Booking.com trotzdem blockiert, waere eine offizielle API die stabilere Endloesung.
 - Fuer die Endpraesentation offizielle Hotel- oder Content-APIs pruefen, z.B. Amadeus Hotel API oder TripAdvisor Content API.
+
+Aktueller Fortschritt:
+
+- Der Browser-Fallback funktioniert im Test.
+- Es wurden 5 Hoteloptionen fuer Barcelona extrahiert.
+- Die Hotelquelle kann aktuell im MVP gezeigt werden.
 
 Offene Frage:
 

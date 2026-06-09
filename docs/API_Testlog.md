@@ -110,7 +110,7 @@ Die verbleibende technische Schwachstelle liegt nicht mehr beim Assistant, sonde
 
 ## Test 2: Flugquelle
 
-Status: getestet, nicht stabil genug fuer MVP-Live-Daten
+Status: erfolgreich getestet mit Browser-Fallback
 
 Testdatei:
 
@@ -174,29 +174,32 @@ Zimmer: 1
 
 Aktueller Ansatz:
 
-- Booking.com-Scraping im bestehenden Code
+- Booking.com-Scraping wie im Referenzprojekt
+- zusaetzlicher Browser-Fallback mit Playwright
 
 Risiko:
 
 - HTML-Struktur kann sich aendern.
 - Zugriff kann blockiert werden.
 
-MVP-Entscheidung:
+Ergebnis:
 
 ```text
-Getestet am 2026-06-09.
+Erneut getestet am 2026-06-09.
 
 Ausgabe:
-- Booking.com-Scraping wurde fuer Barcelona getestet.
-- Die Quelle antwortete mit HTTP 202.
-- Es wurden keine verwertbaren Hotelkarten extrahiert.
+- Hotel 1: BYPILLOW Flamant | Price: EUR 763
+- Hotel 2: Front Arc | Price: EUR 490
+- Hotel 3: Residencia Universitaria Resa Lesseps | Price: EUR 383
+- Hotel 4: Hostal Lesseps | Price: EUR 413
+- Hotel 5: Hotel Constanza | Price: EUR 593
 
 Bewertung:
-Die Hotelquelle ist fuer eine stabile Live-Demo nicht geeignet, weil Booking.com ueber Scraping abgefragt wird und keine direkt verwertbare HTML-Antwort geliefert hat.
+Die Hotelquelle funktioniert jetzt fuer den MVP-Test. Da weiterhin Booking.com-Scraping genutzt wird, bleibt ein technisches Risiko bestehen.
 
 MVP-Entscheidung:
-Fuer die Zwischenpraesentation werden keine echten Hotel-Live-Daten als kritischer Bestandteil verwendet.
-Falls Hoteloptionen gezeigt werden, dann als Beispiel-/Fallback-Daten.
+Hotel-Live-Daten koennen im MVP gezeigt werden, wenn der Browser-Fallback verfuegbar ist.
+Die Instabilitaet von Scraping wird weiterhin dokumentiert.
 ```
 
 ## Demo-Modus fuer Zwischenpraesentation
