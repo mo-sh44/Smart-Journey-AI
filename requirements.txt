@@ -7,3 +7,4 @@ atproto~=0.0.56
 protobuf~=5.29.1
 google-auth-oauthlib~=1.2.1
 google-api-python-client~=2.155.0
+playwright~=1.53.0

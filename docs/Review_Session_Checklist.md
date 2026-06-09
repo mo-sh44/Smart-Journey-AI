@@ -87,8 +87,10 @@ Risiko:
 
 Alternative:
 
-- Fuer die Zwischenpraesentation Flug-Live-Daten nicht als kritischen MVP-Teil verwenden.
-- Flugoptionen bei Bedarf als Beispiel-/Fallback-Daten zeigen.
+- Swoodoo bleibt wie im Referenzprojekt die Flugquelle.
+- Als Verbesserung wurde ein Browser-Fallback mit Playwright eingebaut.
+- Dadurch kann die Seite wie im Browser gerendert werden, falls ein normaler HTTP-Request nicht reicht.
+- Falls Swoodoo trotzdem blockiert, waere eine offizielle API die stabilere Endloesung.
 - Fuer die Endpraesentation offizielle Flug-APIs pruefen, z.B. Skyscanner Partner API, Amadeus oder andere Anbieter.
 
 Offene Frage:
@@ -118,8 +120,10 @@ Risiko:
 
 Alternative:
 
-- Fuer die Zwischenpraesentation Hotel-Live-Daten nicht als kritischen MVP-Teil verwenden.
-- Hoteloptionen bei Bedarf als Beispiel-/Fallback-Daten zeigen.
+- Booking.com bleibt wie im Referenzprojekt die Hotelquelle.
+- Als Verbesserung wurde ein Browser-Fallback mit Playwright eingebaut.
+- Dadurch kann die Booking.com-Seite gerendert werden, wenn der normale Request keine Hotelkarten liefert.
+- Falls Booking.com trotzdem blockiert, waere eine offizielle API die stabilere Endloesung.
 - Fuer die Endpraesentation offizielle Hotel- oder Content-APIs pruefen, z.B. Amadeus Hotel API oder TripAdvisor Content API.
 
 Offene Frage:

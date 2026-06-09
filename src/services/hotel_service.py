@@ -15,10 +15,20 @@ class HotelService:
         url = self._build_url(city, checkin_date, checkout_date, adults, rooms)
         try:
             response = requests.get(url, headers=self.HEADERS, timeout=15)
-            if response.status_code != 200:
-                return f"Hotel search failed (HTTP {response.status_code})."
-            return self._parse(response.text)
+            if response.status_code == 200:
+                result = self._parse(response.text)
+                if result:
+                    return result
+
+            browser_result = self._search_with_browser(url)
+            if browser_result:
+                return browser_result
+
+            return f"Hotel search failed (HTTP {response.status_code})."
         except requests.RequestException as exc:
+            browser_result = self._search_with_browser(url)
+            if browser_result:
+                return browser_result
             return f"Hotel search unavailable: {type(exc).__name__}"
 
     def _build_url(self, city: str, checkin_date: str, checkout_date: str,
@@ -51,3 +61,29 @@ class HotelService:
                 f"Distance: {distance.text.strip() if distance else 'N/A'}"
             )
         return "\n".join(results)
+
+    def _search_with_browser(self, url: str) -> str:
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            return (
+                "Hotel browser search requires Playwright. "
+                "Run: pip install -r requirements.txt && python -m playwright install chromium"
+            )
+
+        try:
+            with sync_playwright() as playwright:
+                browser = playwright.chromium.launch(headless=True)
+                context = browser.new_context(
+                    user_agent=self.HEADERS["User-Agent"],
+                    locale="de-DE",
+                    extra_http_headers={"Accept-Language": self.HEADERS["Accept-Language"]},
+                )
+                page = context.new_page()
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                page.wait_for_timeout(8000)
+                html = page.content()
+                browser.close()
+            return self._parse(html)
+        except Exception as exc:
+            return f"Hotel browser search unavailable: {type(exc).__name__}"

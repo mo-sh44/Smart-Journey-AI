@@ -110,6 +110,7 @@ Falls noch keine `.venv` existiert:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
 ### 3. `.env` vorbereiten
@@ -181,8 +182,8 @@ Bewertung:
 
 ```text
 Swoodoo wird ueber Scraping abgefragt.
-Im Test konnten keine verlaesslichen Flugdaten extrahiert werden.
-Fuer die Zwischenpraesentation wird Flug-Live-Datenzugriff nicht als kritischer MVP-Teil verwendet.
+Die Implementierung versucht zuerst einen normalen HTTP-Request und danach einen Browser-Fallback ueber Playwright.
+Falls weiterhin keine Daten extrahiert werden, liegt das wahrscheinlich an dynamischem Laden oder Bot-Schutz der Webseite.
 ```
 
 ### Hotelquelle testen
@@ -201,8 +202,24 @@ Bewertung:
 
 ```text
 Booking.com wird ueber Scraping abgefragt.
-HTTP 202 liefert keine direkt verwertbaren Hotelkarten.
-Fuer die Zwischenpraesentation wird Hotel-Live-Datenzugriff nicht als kritischer MVP-Teil verwendet.
+Die Implementierung versucht zuerst einen normalen HTTP-Request und danach einen Browser-Fallback ueber Playwright.
+Dadurch ist sie naeher an der alten Projektumsetzung, aber weiterhin kein Ersatz fuer eine offizielle API.
+```
+
+### Browser-Fallback installieren
+
+Flug- und Hotelsuche verwenden optional Playwright, falls die normale HTML-Abfrage nicht ausreicht:
+
+```powershell
+pip install -r requirements.txt
+python -m playwright install chromium
+```
+
+Danach erneut testen:
+
+```powershell
+python src/test_flight_source.py
+python src/test_hotel_source.py
 ```
 
 ### BlueSky-Quelle testen

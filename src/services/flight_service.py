@@ -27,6 +27,11 @@ class FlightService:
             except requests.RequestException:
                 time.sleep(delay)
                 delay = random.randint(1, 5)
+
+        browser_result = self._search_with_browser(url)
+        if browser_result:
+            return browser_result
+
         return "No flights found for this route."
 
     def _build_url(self, dep, arr, passengers, dep_date, ret_date) -> str:
@@ -53,3 +58,29 @@ class FlightService:
                 f"Return: {dur[1].text.strip()} ({stp[1].text.strip()})"
             )
         return "\n".join(results)
+
+    def _search_with_browser(self, url: str) -> str:
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            return (
+                "Flight browser search requires Playwright. "
+                "Run: pip install -r requirements.txt && python -m playwright install chromium"
+            )
+
+        try:
+            with sync_playwright() as playwright:
+                browser = playwright.chromium.launch(headless=True)
+                context = browser.new_context(
+                    user_agent=self.HEADERS["User-Agent"],
+                    locale="de-DE",
+                    extra_http_headers={"Accept-Language": "de-DE,de;q=0.9,en;q=0.8"},
+                )
+                page = context.new_page()
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                page.wait_for_timeout(10000)
+                html = page.content()
+                browser.close()
+            return self._parse(html)
+        except Exception as exc:
+            return f"Flight browser search unavailable: {type(exc).__name__}"
