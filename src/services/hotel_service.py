@@ -1,3 +1,5 @@
+import asyncio
+import sys
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
@@ -17,13 +19,12 @@ class HotelService:
             response = requests.get(url, headers=self.HEADERS, timeout=15)
             if response.status_code == 200:
                 result = self._parse(response.text)
-                if result:
+                if result and result != "Keine Hotels gefunden.":
                     return result
 
             browser_result = self._search_with_browser(url)
             if browser_result:
                 return browser_result
-
             return f"Hotel search failed (HTTP {response.status_code})."
         except requests.RequestException as exc:
             browser_result = self._search_with_browser(url)
@@ -47,7 +48,7 @@ class HotelService:
         soup = BeautifulSoup(html, "html.parser")
         cards = soup.find_all("div", {"data-testid": "property-card"}, limit=5)
         if not cards:
-            return "No hotels found."
+            return "Keine Hotels gefunden."
         results = []
         for i, card in enumerate(cards, start=1):
             name = card.find("div", {"data-testid": "title"})
@@ -66,6 +67,7 @@ class HotelService:
         return "\n".join(results)
 
     def _search_with_browser(self, url: str) -> str:
+        self._configure_windows_event_loop()
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
@@ -87,6 +89,11 @@ class HotelService:
                 page.wait_for_timeout(8000)
                 html = page.content()
                 browser.close()
-            return self._parse(html)
+            result = self._parse(html)
+            return "" if result == "Keine Hotels gefunden." else result
         except Exception as exc:
-            return f"Hotel browser search unavailable: {type(exc).__name__}"
+            return f"Hotel browser search unavailable: {type(exc).__name__}: {str(exc).splitlines()[0]}"
+
+    def _configure_windows_event_loop(self) -> None:
+        if sys.platform.startswith("win"):
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())

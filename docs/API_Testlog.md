@@ -101,16 +101,17 @@ Ergebnis:
 - Der Assistant hat die Anfrage verarbeitet.
 - Die Wetterdaten fuer Barcelona wurden korrekt eingebunden.
 - Der Assistant hat einen Reisevorschlag erzeugt.
-- Flug- und Hotelsuche wurden aufgerufen bzw. beruecksichtigt, lieferten aber keine verwertbaren Live-Daten.
+- Die Hotelsuche liefert inzwischen echte Booking.com-Ergebnisse.
+- Die Flugquelle liefert Swoodoo-Ergebnisse; der Parser wurde an die aktuelle Seitenstruktur angepasst.
 
 Bewertung:
 Der OpenAI Assistant Mode funktioniert grundsaetzlich.
-Die verbleibende technische Schwachstelle liegt nicht mehr beim Assistant, sondern bei den Flug- und Hotelquellen.
+Die verbleibende technische Schwachstelle liegt nicht beim Assistant, sondern bei der Stabilitaet von Scraping-Quellen.
 ```
 
 ## Test 2: Flugquelle
 
-Status: erfolgreich getestet mit Browser-Fallback
+Status: erfolgreich analysiert, Parser aktualisiert
 
 Testdatei:
 
@@ -129,33 +130,38 @@ Personen: 1
 Aktueller Ansatz:
 
 - Swoodoo-Scraping im bestehenden Code
+- Browser-Fallback mit Playwright, falls normaler HTTP-Zugriff nicht reicht
+- Parser fuer aktuelle Swoodoo-Ergebniskarten
 
 Risiko:
 
 - HTML-Scraping kann instabil sein.
 - Webseiten koennen Zugriffe blockieren.
+- Interne CSS-Klassen koennen sich ohne Ankuendigung aendern.
 
-MVP-Entscheidung:
+Ergebnis:
 
 ```text
 Getestet am 2026-06-09.
 
 Ausgabe:
-- Swoodoo-Scraping wurde fuer BER nach BCN getestet.
-- Die erwarteten Flugdaten konnten nicht extrahiert werden.
-- Ergebnis: "No flights found for this route."
+- Swoodoo wurde fuer BER nach BCN getestet.
+- Die Seite liefert sichtbare Flugangebote.
+- Der Parser wurde auf die aktuelle Swoodoo-Struktur angepasst.
+- Aus der Debug-Seite wurden 5 Flugoptionen extrahiert.
 
 Bewertung:
-Die Flugquelle ist fuer eine stabile Live-Demo nicht geeignet, weil sie ueber HTML-Scraping funktioniert und keine verlaesslichen Daten geliefert hat.
+Die Flugquelle kann echte Daten liefern. Da sie ueber HTML-Scraping funktioniert, bleibt sie technisch riskanter als eine offizielle API.
 
 MVP-Entscheidung:
-Fuer die Zwischenpraesentation werden keine echten Flug-Live-Daten als kritischer Bestandteil verwendet.
-Falls Flugoptionen gezeigt werden, dann als Beispiel-/Fallback-Daten.
+Fuer den aktuellen Stand wird Swoodoo wie im Referenzprojekt genutzt.
+Der Browser-Fallback und der aktualisierte Parser sollen echte Flugoptionen anzeigen.
+Falls Swoodoo blockiert, wird dies als API-/Scraping-Risiko erklaert.
 ```
 
 ## Test 3: Hotelquelle
 
-Status: getestet, nicht stabil genug fuer MVP-Live-Daten
+Status: erfolgreich getestet mit Browser-Fallback
 
 Testdatei:
 

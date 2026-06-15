@@ -1,7 +1,13 @@
+import asyncio
+import sys
+
 import streamlit as st
 from dotenv import load_dotenv
-from core.demo_mode import create_demo_travel_plan, create_local_ai_travel_plan
+from core.demo_mode import create_demo_travel_plan
 from core.openai_handler import OpenAIHandler
+
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 load_dotenv()
 
@@ -46,8 +52,8 @@ with st.sidebar:
     st.divider()
     mode = st.radio(
         "Mode",
-        ["Local AI", "Demo mode", "OpenAI Assistant"],
-        help="Local AI uses Ollama on localhost. Demo mode is a deterministic fallback.",
+        ["OpenAI Assistant", "Demo mode"],
+        help="OpenAI Assistant uses tools. Demo mode is a deterministic fallback.",
     )
     st.divider()
     st.markdown("### Quick Start")
@@ -79,10 +85,7 @@ def process(user_input: str):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
-    if mode == "Local AI":
-        with st.spinner("Checking live weather data and generating with local AI..."):
-            response = create_local_ai_travel_plan(user_input)
-    elif mode == "Demo mode":
+    if mode == "Demo mode":
         with st.spinner("Checking live weather data..."):
             response = create_demo_travel_plan(user_input)
     else:

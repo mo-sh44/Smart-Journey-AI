@@ -3,6 +3,8 @@ SAFE_TESTS = [
     ("Flight source", "python src/test_flight_source.py", "Checks scraping source without booking anything."),
     ("Hotel source", "python src/test_hotel_source.py", "Checks scraping source without booking anything."),
     ("BlueSky read test", "python src/test_bluesky_source.py", "Reads recent posts only; does not publish."),
+    ("BlueSky personalization", "python src/test_bluesky_personalization.py", "Reads posts and derives travel interests."),
+    ("BlueSky post preview", "python src/test_bluesky_publish.py", "Shows a prepared post without publishing."),
 ]
 
 

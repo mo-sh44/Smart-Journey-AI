@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import requests
+
 from services.flight_service import FlightService
 
 
@@ -14,37 +16,17 @@ def main():
     print()
 
     try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        print("Playwright is not installed.")
-        print("Run: pip install -r requirements.txt")
-        print("Run: python -m playwright install chromium")
+        response = requests.get(url, headers=service.HEADERS, timeout=15)
+    except requests.RequestException as error:
+        print(f"Request failed: {type(error).__name__}")
         return
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        context = browser.new_context(
-            user_agent=service.HEADERS["User-Agent"],
-            locale="de-DE",
-            extra_http_headers={"Accept-Language": "de-DE,de;q=0.9,en;q=0.8"},
-        )
-        page = context.new_page()
-        page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(15000)
+    html = response.text
+    html_path = output_dir / "swoodoo_flight_debug.html"
+    html_path.write_text(html, encoding="utf-8")
 
-        title = page.title()
-        html = page.content()
-        screenshot_path = output_dir / "swoodoo_flight_debug.png"
-        html_path = output_dir / "swoodoo_flight_debug.html"
-
-        page.screenshot(path=str(screenshot_path), full_page=True)
-        html_path.write_text(html, encoding="utf-8")
-
-        browser.close()
-
-    print(f"Page title: {title}")
+    print(f"HTTP status: {response.status_code}")
     print(f"HTML saved: {html_path}")
-    print(f"Screenshot saved: {screenshot_path}")
     print()
 
     parsed = service._parse(html)
@@ -53,7 +35,7 @@ def main():
         print(parsed)
     else:
         print("Parser did not find flight data.")
-        print("Next step: inspect the screenshot/HTML to see whether Swoodoo blocks the page or changed selectors.")
+        print("Next step: inspect the HTML to see whether Swoodoo blocks the page or changed selectors.")
 
 
 if __name__ == "__main__":

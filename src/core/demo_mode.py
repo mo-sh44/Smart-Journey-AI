@@ -1,6 +1,5 @@
 import re
 
-from services.local_ai_service import LocalAIService
 from services.weather_service import WeatherService
 
 
@@ -88,25 +87,6 @@ def create_demo_travel_plan(prompt: str) -> str:
 
 Dieser Demo-Modus nutzt echte Wetterdaten. Der OpenAI Assistant ist eingerichtet, kann aber bei API-Quota- oder Billing-Problemen durch diesen stabilen Fallback ersetzt werden.
 """.strip()
-
-
-def create_local_ai_travel_plan(prompt: str) -> str:
-    departure, destination, weather_location, start_date, end_date, trip_type = extract_trip_details(prompt)
-    weather = WeatherService().get_forecast(weather_location, start_date, end_date)
-
-    trip_details = {
-        "departure": departure,
-        "destination": destination,
-        "weather_location": weather_location,
-        "start_date": start_date,
-        "end_date": end_date,
-        "trip_type": trip_type,
-    }
-
-    if not weather or "could not be retrieved" in weather:
-        weather = "No live weather data could be retrieved. Continue with a cautious planning note."
-
-    return LocalAIService().generate_travel_plan(prompt, trip_details, weather)
 
 
 def _weather_lookup_location(destination: str) -> str:

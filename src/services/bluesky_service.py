@@ -16,7 +16,12 @@ class BlueskyService:
         self.username = os.getenv("BLUESKY_USERNAME")
         self.password = os.getenv("BLUESKY_PASSWORD")
 
+    def has_credentials(self) -> bool:
+        return bool(self.username and self.password)
+
     def fetch_recent_posts(self, limit: int = 25) -> list:
+        if not self.has_credentials():
+            raise ValueError("BlueSky credentials are missing.")
         client = Client()
         client.login(self.username, self.password)
         profile = client.get_profile(actor=self.username)
@@ -29,6 +34,10 @@ class BlueskyService:
 
     def publish_post(self, text: str) -> str:
         try:
+            if not self.has_credentials():
+                return "Failed to publish: BlueSky credentials are missing."
+            if len(text) > 300:
+                text = text[:297] + "..."
             auth = requests.post(
                 f"{self.PDS_URL}/xrpc/com.atproto.server.createSession",
                 json={"identifier": self.username, "password": self.password},

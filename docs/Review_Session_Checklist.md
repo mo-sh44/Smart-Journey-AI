@@ -5,7 +5,7 @@
 Smart Journey AI ist aktuell ein lauffaehiger MVP-Prototyp mit:
 
 - Streamlit-Oberflaeche
-- Local AI mode fuer KI-generierte Reisevorschlaege
+- OpenAI Assistant mode mit Tool Calling
 - Demo mode fuer eine stabile Live-Demo
 - echter Wetter-API ueber Visual Crossing
 - vorbereitetem OpenAI Assistant
@@ -14,7 +14,7 @@ Smart Journey AI ist aktuell ein lauffaehiger MVP-Prototyp mit:
 - dokumentierter API-Risikoanalyse
 - sicheren Einzeltests fuer externe Datenquellen
 
-Der aktuelle MVP fokussiert sich auf wetterbasierte Reiseplanung mit KI-generierter Antwort im Local AI mode. Der Demo mode bleibt als stabiler Fallback erhalten. Flug- und Hoteldaten wurden technisch geprueft, sind aber aktuell nicht stabil genug fuer eine verlaessliche Live-Demo.
+Der aktuelle MVP kombiniert KI-generierte Reiseplanung mit echten externen Datenquellen. Wetterdaten funktionieren stabil, Booking.com liefert Hoteloptionen, und die Swoodoo-Flugquelle wurde mit Browser-Fallback und aktualisiertem Parser verbessert. Der Demo mode bleibt als stabiler Fallback erhalten.
 
 ## 2. Vorfuehrbare Funktionen
 
@@ -29,7 +29,7 @@ python -m streamlit run src/main.py
 In der App:
 
 ```text
-Mode: Local AI
+Mode: OpenAI Assistant
 ```
 
 Beispielanfrage:
@@ -75,13 +75,15 @@ python src/test_flight_source.py
 Aktuelles Ergebnis:
 
 ```text
-No flights found for this route.
+Swoodoo liefert sichtbare Flugangebote.
+Der Parser wurde auf die aktuelle Seitenstruktur angepasst.
+Aus der Debug-Seite wurden 5 Flugoptionen extrahiert.
 ```
 
 Risiko:
 
 - Die aktuelle Flugquelle nutzt Swoodoo-Scraping.
-- Die Webseite liefert zwar HTML, aber die erwarteten Flugdaten koennen nicht verlaesslich extrahiert werden.
+- Swoodoo liefert Flugdaten, aber die Seitenstruktur kann sich aendern.
 - CSS-Klassen und HTML-Strukturen koennen sich aendern.
 - Scraping kann durch Webseiten blockiert werden.
 
@@ -90,13 +92,14 @@ Alternative:
 - Swoodoo bleibt wie im Referenzprojekt die Flugquelle.
 - Als Verbesserung wurde ein Browser-Fallback mit Playwright eingebaut.
 - Dadurch kann die Seite wie im Browser gerendert werden, falls ein normaler HTTP-Request nicht reicht.
+- Der Parser wurde auf die aktuelle Swoodoo-Ergebniskarte angepasst.
 - Falls Swoodoo trotzdem blockiert, waere eine offizielle API die stabilere Endloesung.
 - Fuer die Endpraesentation offizielle Flug-APIs pruefen, z.B. Skyscanner Partner API, Amadeus oder andere Anbieter.
 
 Offene Frage:
 
 ```text
-Ist es fuer die Zwischenpraesentation akzeptabel, Flugoptionen als Fallback-Daten zu behandeln, wenn die Live-Quelle ueber Scraping nicht stabil ist?
+Ist Swoodoo-Scraping fuer den Projektumfang akzeptabel, wenn wir das technische Risiko dokumentieren und alternativ offizielle APIs fuer die Endphase pruefen?
 ```
 
 ### Hotelquelle
@@ -185,10 +188,9 @@ Risiko:
 
 Alternative:
 
-- Local AI mode als KI-Demo ohne OpenAI-Kosten.
 - Demo mode als stabiler Fallback ohne LLM.
-- OpenAI Assistant als Architektur- und Tool-Calling-Komponente erklaeren.
-- Fuer die Endpraesentation ggf. API-Budget klaeren oder auf neuere OpenAI-Struktur migrieren.
+- OpenAI Assistant als Architektur- und Tool-Calling-Komponente live zeigen.
+- Fuer die Endpraesentation ggf. auf neuere OpenAI-Struktur migrieren.
 
 Offene Frage:
 
@@ -202,8 +204,9 @@ Der aktuelle MVP wird bewusst stabil gehalten:
 
 - Wetterdaten live
 - Reisevorschlag live in der App
-- KI-generierte Antwort ueber Local AI mode
-- Flug/Hotel als dokumentierte Risikoquellen
+- KI-generierte Antwort ueber OpenAI Assistant mode
+- Hoteloptionen live ueber Booking.com
+- Flugoptionen ueber Swoodoo mit Browser-Fallback
 - Demo mode als technische Fallback-Variante
 - OpenAI Assistant als vorbereitete Agentenkomponente
 
@@ -219,20 +222,19 @@ Deshalb wird der MVP auf die stabilen Bestandteile fokussiert und riskante Quell
 Fuer die naechste Projektphase:
 
 - BlueSky Read-Test mit App-Passwort durchfuehren
-- Local AI mode mit Ollama/Gemma lokal testen
 - BlueSky-Posts fuer Personalisierung nutzen
 - Google Calendar mit echten OAuth-Credentials testen
 - E-Mail/ICS kontrolliert mit Testempfaenger pruefen
-- Flug- und Hotel-Fallback-Daten in der App sichtbarer machen
+- Flug- und Hotelquellen weiter stabilisieren
 - offizielle APIs fuer Flug und Hotel recherchieren
 - OpenAI Assistant Live-Modus nur mit gesichertem API-Budget testen
 - Fehlerbehandlung in der UI weiter verbessern
 
 ## 6. Fragen zur Scope-Abstimmung
 
-1. Reicht fuer die Zwischenpraesentation ein stabiler MVP mit echter Wetter-API, Local AI mode und dokumentierten Risiken fuer Flug/Hotel?
+1. Reicht fuer die Zwischenpraesentation ein MVP mit echter Wetter-API, OpenAI Assistant mode, Booking.com-Hotels und Swoodoo-Flugquelle?
 2. Werden echte Live-Flug- und Live-Hoteldaten fuer die Zwischenpraesentation erwartet?
-3. Falls Flug/Hotel-Live-Daten nicht stabil verfuegbar sind: Sind Fallback-Daten fuer die Demo akzeptabel?
+3. Ist Scraping fuer Flug/Hotel im Projektkontext akzeptabel, wenn Risiken und Alternativen klar dokumentiert werden?
 4. Soll der Fokus eher auf Agentenlogik und Tool Calling liegen oder auf moeglichst vielen angebundenen Datenquellen?
 5. Reicht BlueSky als Read-Test fuer Personalisierung, oder soll auch das Veröffentlichen eines Posts gezeigt werden?
 6. Soll Google Calendar bis zur Zwischenpraesentation live gezeigt werden oder reicht die vorbereitete Architektur?
@@ -243,8 +245,8 @@ Fuer die naechste Projektphase:
 ```text
 Smart Journey AI ist aktuell ein lauffaehiger MVP-Prototyp.
 Die Wetter-API funktioniert live und stabil.
-Der Local AI mode ist als KI-Demo ohne OpenAI-Kosten vorbereitet.
-Flug- und Hoteldaten wurden getestet, sind ueber Scraping aber nicht verlaesslich genug.
-Der MVP wurde deshalb auf stabile wetterbasierte Reiseplanung fokussiert.
+Der OpenAI Assistant mode ist fuer Tool Calling eingerichtet.
+Hotel-Live-Daten funktionieren ueber Booking.com.
+Die Swoodoo-Flugquelle liefert Daten und der Parser wurde aktualisiert.
 Weitere Integrationen sind vorbereitet und werden nach Machbarkeit priorisiert.
 ```

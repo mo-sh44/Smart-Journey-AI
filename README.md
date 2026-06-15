@@ -2,7 +2,7 @@
 
 Smart Journey AI ist ein KI-gestuetzter Reiseassistent fuer die Projektarbeit an der HTW Berlin. Das System soll nicht nur Fragen beantworten, sondern Reiseplanungsschritte automatisieren: Nutzereingabe analysieren, Wetterdaten abrufen, externe Datenquellen pruefen, Ergebnisse bewerten und daraus einen Reisevorschlag erstellen.
 
-Der aktuelle Zwischenstand ist ein MVP-Prototyp. Er nutzt echte Wetterdaten und dokumentiert technische Risiken bei Flug- und Hoteldaten.
+Der aktuelle Zwischenstand ist ein MVP-Prototyp. Er nutzt echte Wetterdaten, echte Hoteloptionen und eine verbesserte Swoodoo-Flugquelle mit Browser-Fallback.
 
 ## Projektziel
 
@@ -26,12 +26,12 @@ Dieser Stand dokumentiert den aktuellen technischen Fortschritt: lauffaehiger MV
 Bereits umgesetzt:
 
 - Streamlit-App mit heller, gut lesbarer Oberflaeche
-- Local AI mode mit Ollama als lokaler KI-Option
-- Demo mode ohne OpenAI-Kosten
+- OpenAI Assistant mode mit Tool Calling
+- Demo mode als stabiler Fallback
 - echte Wetter-API ueber Visual Crossing
 - OpenAI Assistant wurde eingerichtet
-- Flugquelle wurde getestet, aber als instabil bewertet
-- Hotelquelle wurde getestet, aber als instabil bewertet
+- Flugquelle wurde getestet; Swoodoo liefert Daten und der Parser wurde aktualisiert
+- Hotelquelle wurde getestet; Booking.com liefert echte Hoteloptionen
 - BlueSky-Service ist vorbereitet und kann letzte Posts abrufen
 - API-Testlog und MVP-Plan dokumentiert
 
@@ -39,9 +39,10 @@ Der MVP ist bewusst angepasst:
 
 ```text
 Wetterdaten sind live.
-Local AI mode nutzt ein lokales Modell fuer dynamisch generierte Reisevorschlaege.
-Flug- und Hoteldaten werden vorerst als Risiko dokumentiert.
-OpenAI Assistant ist eingerichtet, aber bei API-Quota/Billing kann Demo mode genutzt werden.
+OpenAI Assistant nutzt Tool Calling fuer Wetter, Flug, Hotel und BlueSky.
+Hoteloptionen werden live ueber Booking.com gelesen.
+Flugoptionen werden ueber Swoodoo mit Browser-Fallback gelesen.
+Bei API-Quota/Billing-Problemen kann Demo mode als stabiler Fallback genutzt werden.
 ```
 
 ## Geplante Erweiterungen
@@ -110,7 +111,6 @@ Falls noch keine `.venv` existiert:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python -m playwright install chromium
 ```
 
 ### 3. `.env` vorbereiten
@@ -126,8 +126,6 @@ OPENAI_API_KEY=
 ASSISTANT_ID=
 THREAD_ID=
 VISUAL_CROSSING_API_KEY=
-LOCAL_LLM_URL=http://localhost:11434
-LOCAL_LLM_MODEL=gemma3:4b
 BLUESKY_USERNAME=
 BLUESKY_PASSWORD=
 GOOGLE_CREDENTIALS_PATH=./data/credentials.json
@@ -175,15 +173,18 @@ python src/test_flight_source.py
 Aktuelles Ergebnis:
 
 ```text
-No flights found for this route.
+Swoodoo liefert sichtbare Flugangebote.
+Der Parser wurde auf die aktuelle Seitenstruktur angepasst.
+Beispiel: Optionen ab ca. 182 EUR fuer BER nach BCN.
 ```
 
 Bewertung:
 
 ```text
 Swoodoo wird ueber Scraping abgefragt.
-Die Implementierung versucht zuerst einen normalen HTTP-Request und danach einen Browser-Fallback ueber Playwright.
-Falls weiterhin keine Daten extrahiert werden, liegt das wahrscheinlich an dynamischem Laden oder Bot-Schutz der Webseite.
+Die Implementierung nutzt einen normalen HTTP-Request mit `requests` und wertet das HTML mit BeautifulSoup aus.
+Der Parser liest aktuell Preis, Airline, Hinflug und Rueckflug aus den sichtbaren Ergebniskarten.
+Das technische Risiko bleibt: Swoodoo kann Klassen, Layout oder Zugriffsschutz jederzeit aendern.
 ```
 
 ### Hotelquelle testen
@@ -202,17 +203,8 @@ Bewertung:
 
 ```text
 Booking.com wird ueber Scraping abgefragt.
-Die Implementierung versucht zuerst einen normalen HTTP-Request und danach einen Browser-Fallback ueber Playwright.
-Dadurch ist sie naeher an der alten Projektumsetzung, aber weiterhin kein Ersatz fuer eine offizielle API.
-```
-
-### Browser-Fallback installieren
-
-Flug- und Hotelsuche verwenden optional Playwright, falls die normale HTML-Abfrage nicht ausreicht:
-
-```powershell
-pip install -r requirements.txt
-python -m playwright install chromium
+Die Implementierung nutzt einen normalen HTTP-Request mit `requests` und wertet das HTML mit BeautifulSoup aus.
+Das ist wie in der alten Projektumsetzung, aber weiterhin kein Ersatz fuer eine offizielle API.
 ```
 
 Danach erneut testen:
@@ -251,6 +243,49 @@ BlueSky kann fuer Personalisierung genutzt werden, wenn Zugangsdaten vorhanden s
 Der sichere Test liest nur Posts und veroeffentlicht nichts.
 ```
 
+### BlueSky-Personalisierung testen
+
+```powershell
+python src/test_bluesky_personalization.py
+```
+
+Dieser Test liest die letzten Posts und leitet daraus Reiseinteressen ab, z.B. Kultur, Cafes, Essen, Strand oder Fotospots.
+
+Wenn der Demo-Account noch keine Posts hat, koennen harmlose Beispiel-Posts vorbereitet werden:
+
+```powershell
+python src/seed_bluesky_demo_posts.py
+```
+
+Das zeigt nur eine Vorschau und veroeffentlicht nichts.
+Mit ausdruecklicher Bestaetigung koennen die Demo-Posts auf dem konfigurierten BlueSky-Account veroeffentlicht werden:
+
+```powershell
+python src/seed_bluesky_demo_posts.py --publish
+```
+
+Danach erneut testen:
+
+```powershell
+python src/test_bluesky_source.py
+python src/test_bluesky_personalization.py
+```
+
+### BlueSky-Post vorbereiten
+
+```powershell
+python src/test_bluesky_publish.py
+```
+
+Dieser Test zeigt nur einen vorbereiteten Reise-Post.
+Es wird nichts veroeffentlicht.
+
+Nur mit Demo-Account und ausdruecklicher Bestaetigung:
+
+```powershell
+python src/test_bluesky_publish.py --publish
+```
+
 ## App starten
 
 ```powershell
@@ -266,7 +301,7 @@ http://localhost:8501
 Fuer die Zwischenpraesentation links in der Sidebar auswaehlen:
 
 ```text
-Local AI
+OpenAI Assistant
 ```
 
 Beispiel-Prompt:
@@ -284,38 +319,6 @@ Winter trip to the Alps
 ```
 
 Diese Quickstarts erzeugen unterschiedliche Demo-Szenarien.
-
-## Lokale KI mit Ollama
-
-Der Local AI mode ist dafuer gedacht, KI-Einsatz ohne OpenAI-API-Kosten zu zeigen.
-
-Voraussetzung:
-
-```text
-Ollama muss lokal laufen.
-Das Modell aus LOCAL_LLM_MODEL muss installiert sein.
-```
-
-Beispiel:
-
-```powershell
-ollama pull gemma3:4b
-ollama serve
-```
-
-Danach die App starten:
-
-```powershell
-python -m streamlit run src/main.py
-```
-
-In der Sidebar:
-
-```text
-Mode: Local AI
-```
-
-Wenn Ollama nicht laeuft, zeigt die App eine Fehlermeldung und der Demo mode kann weiter als Fallback genutzt werden.
 
 ## OpenAI Assistant einrichten
 
@@ -403,14 +406,15 @@ docs/API_Testlog.md
 docs/API_MVP_Plan.md
 docs/Architecture_Flowchart.md
 docs/Review_Session_Checklist.md
+docs/Bluesky_Demo_Guide.md
 ```
 
 `API_Testlog.md` dokumentiert:
 
 - Wetter-API funktioniert
 - OpenAI Assistant wurde eingerichtet
-- Flugquelle wurde getestet, aber ist instabil
-- Hotelquelle wurde getestet, aber ist instabil
+- Flugquelle wurde getestet und der Parser wurde aktualisiert
+- Hotelquelle liefert echte Booking.com-Ergebnisse
 - Demo mode wurde umgesetzt
 
 `API_MVP_Plan.md` dokumentiert:
@@ -432,8 +436,9 @@ docs/Review_Session_Checklist.md
 ```text
 Wir haben mehrere Datenquellen praktisch getestet.
 Die Wetter-API funktioniert stabil und wird im MVP live verwendet.
-Flug- und Hoteldaten wurden ueber Scraping getestet, lieferten aber keine verlaesslich strukturierten Ergebnisse.
-Deshalb wurde der MVP angepasst: Die Zwischenpraesentation zeigt eine stabile Reiseplanung mit echter Wetter-API und dokumentiert Flug/Hotel als technische Risiken fuer die naechste Phase.
+Booking.com liefert echte Hoteloptionen.
+Swoodoo liefert Flugangebote; der Parser wurde an die aktuelle Seitenstruktur angepasst.
+Da Flug- und Hotelquellen ueber Scraping laufen, dokumentieren wir weiterhin die technischen Risiken und pruefen fuer die Endphase stabilere offizielle APIs.
 ```
 
 ## Git-Sicherheit
