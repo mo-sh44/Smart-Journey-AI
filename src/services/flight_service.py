@@ -9,7 +9,7 @@ class FlightService:
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    MAX_RETRIES = 10
+    MAX_RETRIES = 2
 
     def search(self, departure_code: str, arrival_code: str, passengers: int,
                departure_date: str, return_date: str) -> str:

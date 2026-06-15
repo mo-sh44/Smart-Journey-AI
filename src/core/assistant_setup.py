@@ -1,9 +1,21 @@
 import os
+import sys
+from pathlib import Path
+
 import openai
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = PROJECT_ROOT / "src"
+DATA_DIR = PROJECT_ROOT / "data"
+ENV_FILE = PROJECT_ROOT / ".env"
+
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 from services.bluesky_service import BlueskyService
 
-load_dotenv()
+load_dotenv(ENV_FILE)
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -65,35 +77,66 @@ def setup_assistant():
     print("  Smart Journey AI – Setup")
     print("=" * 50)
 
-    print("\n[1/4] Uploading user profile...")
-    with open("./data/user_profile.pdf", "rb") as f:
-        profile_file = client.files.create(file=f, purpose="assistants")
-    print(f"      ✓ {profile_file.id}")
+    file_ids = []
 
-    print("[2/4] Fetching Bluesky posts...")
-    BlueskyService().fetch_recent_posts(limit=25)
+    print("\n[1/4] Uploading user profile if available...")
+    profile_path = DATA_DIR / "user_profile.pdf"
+    if profile_path.exists():
+        with profile_path.open("rb") as file:
+            profile_file = client.files.create(file=file, purpose="assistants")
+        file_ids.append(profile_file.id)
+        print(f"      {profile_file.id}")
+    else:
+        print("      skipped: data/user_profile.pdf not found")
 
-    print("[3/4] Uploading social posts...")
-    with open("./data/social_posts.json", "rb") as f:
-        posts_file = client.files.create(file=f, purpose="assistants")
-    print(f"      ✓ {posts_file.id}")
+    print("[2/4] Fetching Bluesky posts if credentials are available...")
+    if os.getenv("BLUESKY_USERNAME") and os.getenv("BLUESKY_PASSWORD"):
+        BlueskyService().fetch_recent_posts(limit=25)
+        print("      Bluesky posts fetched")
+    else:
+        print("      skipped: Bluesky credentials missing")
+
+    print("[3/4] Uploading social posts if available...")
+    posts_path = DATA_DIR / "social_posts.json"
+    if posts_path.exists():
+        with posts_path.open("rb") as file:
+            posts_file = client.files.create(file=file, purpose="assistants")
+        file_ids.append(posts_file.id)
+        print(f"      {posts_file.id}")
+    else:
+        print("      skipped: data/social_posts.json not found")
 
     print("[4/4] Creating assistant and thread...")
-    assistant = client.beta.assistants.create(
-        name="Smart Journey AI",
-        model="gpt-4-1106-preview",
-        instructions=INSTRUCTIONS,
-        tools=TOOLS,
-    )
-    thread = client.beta.threads.create(
-        tool_resources={"file_search": {"vector_stores": [{"name": "User Context", "file_ids": [profile_file.id, posts_file.id]}]}}
-    )
+    vector_store_id = None
+    if file_ids:
+        vector_store = client.beta.vector_stores.create(name="Smart Journey AI User Context")
+        client.beta.vector_stores.file_batches.create_and_poll(
+            vector_store_id=vector_store.id,
+            file_ids=file_ids,
+        )
+        vector_store_id = vector_store.id
 
-    vs_id = thread.tool_resources.file_search.vector_store_ids[0]
-    client.beta.vector_stores.update(vector_store_id=vs_id, expires_after={"anchor": "last_active_at", "days": 90})
+    assistant_kwargs = {
+        "name": "Smart Journey AI",
+        "model": "gpt-4o-mini",
+        "instructions": INSTRUCTIONS,
+        "tools": TOOLS,
+    }
+    if vector_store_id:
+        assistant_kwargs["tool_resources"] = {
+            "file_search": {
+                "vector_store_ids": [vector_store_id],
+            }
+        }
+
+    assistant = client.beta.assistants.create(**assistant_kwargs)
+    thread = client.beta.threads.create()
+
+    set_key(str(ENV_FILE), "ASSISTANT_ID", assistant.id)
+    set_key(str(ENV_FILE), "THREAD_ID", thread.id)
 
     print("\n" + "=" * 50)
-    print("  Add these to your .env file:")
+    print("  Assistant setup completed. .env was updated:")
     print("=" * 50)
     print(f"  ASSISTANT_ID={assistant.id}")
     print(f"  THREAD_ID={thread.id}")

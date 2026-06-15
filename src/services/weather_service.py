@@ -15,6 +15,9 @@ class WeatherService:
         self.api_key = os.getenv("VISUAL_CROSSING_API_KEY")
 
     def get_forecast(self, location: str, start_date: str, end_date: str) -> str:
+        if not self.api_key:
+            return "Weather data could not be retrieved: missing VISUAL_CROSSING_API_KEY."
+
         url = f"{self.BASE_URL}/{location}/{start_date}/{end_date}"
         params = {
             "unitGroup": "metric",
@@ -33,4 +36,4 @@ class WeatherService:
                 )
             return "\n".join(lines) if lines else "No weather data available."
         except requests.RequestException as exc:
-            return f"Weather data could not be retrieved: {exc}"
+            return f"Weather data could not be retrieved: {type(exc).__name__}"

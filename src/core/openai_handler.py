@@ -31,13 +31,23 @@ class OpenAIHandler:
         return self._get_latest_response()
 
     def _wait_for_run(self, run_id: str) -> None:
+        started_at = time.time()
         while True:
+            if time.time() - started_at > 120:
+                raise TimeoutError("Assistant run took too long. Please try again.")
+
             run = self._client.beta.threads.runs.retrieve(
                 thread_id=self._thread_id, run_id=run_id
             )
             status = run.status
-            if status in _TERMINAL:
+            if status == "completed":
                 break
+            if status == "failed":
+                last_error = getattr(run, "last_error", None)
+                message = last_error.message if last_error else "No error details returned by OpenAI."
+                raise RuntimeError(message)
+            if status in {"expired", "cancelled"}:
+                raise RuntimeError(f"Assistant run ended with status: {status}")
             if status == "requires_action":
                 self._handle_tool_calls(run_id, run)
             else:

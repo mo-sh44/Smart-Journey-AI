@@ -1,5 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
+from core.demo_mode import create_demo_travel_plan
 from core.openai_handler import OpenAIHandler
 
 load_dotenv()
@@ -26,6 +27,12 @@ with st.sidebar:
     st.markdown("### 🗺️ How it works")
     st.markdown("1. 💬 Tell me where to go\n2. 📅 I check your calendar\n3. ☀️ I verify the weather\n4. ✈️ I find flights & hotels\n5. 📧 You get a confirmation email\n6. 🌐 Trip shared on Bluesky")
     st.divider()
+    mode = st.radio(
+        "Mode",
+        ["Demo mode", "OpenAI Assistant"],
+        help="Demo mode uses the live weather API without OpenAI API costs.",
+    )
+    st.divider()
     st.markdown("### ⚡ Quick Start")
     for prompt in ["Plan a beach holiday next month", "City break in Europe this summer", "Winter trip to the Alps", "Use my next public holiday"]:
         if st.button(prompt, use_container_width=True, key=f"q_{prompt[:15]}"):
@@ -38,7 +45,7 @@ st.divider()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "handler" not in st.session_state:
+if mode == "OpenAI Assistant" and "handler" not in st.session_state:
     st.session_state.handler = OpenAIHandler()
 
 for msg in st.session_state.messages:
@@ -50,8 +57,15 @@ def process(user_input: str):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
-    with st.spinner("✈️ Planning your journey…"):
-        response = st.session_state.handler.send_message(user_input)
+    if mode == "Demo mode":
+        with st.spinner("Checking live weather data..."):
+            response = create_demo_travel_plan(user_input)
+    else:
+        try:
+            with st.spinner("✈️ Planning your journey…"):
+                response = st.session_state.handler.send_message(user_input)
+        except Exception as error:
+            response = f"Smart Journey AI could not finish the request: {error}"
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.markdown(response)

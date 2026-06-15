@@ -10,11 +10,13 @@ An AI-powered travel planning assistant built for HTW Berlin.
 - 📧 Email confirmation with .ics attachment
 - 🌐 Bluesky social post
 - 🤖 Personalised via user profile
+- ✅ MVP demo mode with live weather data and no OpenAI API costs
 
 ## Structure
 ```
 smart-journey-ai/
 ├── data/                  ← credentials & user profile (not on GitHub)
+├── docs/                  ← API tests, MVP plan, risk documentation
 ├── src/
 │   ├── main.py            ← Streamlit UI
 │   ├── core/
@@ -37,11 +39,32 @@ smart-journey-ai/
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env        # fill in your keys
-cd src
-python -m core.assistant_setup   # run once
-streamlit run main.py
+copy .env.example .env      # Windows: fill in your local keys
+python src/test_weather_api.py
+python -m streamlit run src/main.py
 ```
+
+For the OpenAI Assistant mode, run once:
+
+```bash
+python src/core/assistant_setup.py
+```
+
+Then copy the generated `ASSISTANT_ID` and `THREAD_ID` into `.env`.
+
+## MVP Demo
+
+For the intermediate presentation, use **Demo mode** in the sidebar. It uses the live Visual Crossing Weather API and creates a travel proposal without OpenAI API costs.
+
+Example prompt:
+
+```text
+Ich plane eine Reise von Berlin nach Barcelona vom 10.07.2026 bis 14.07.2026. Bitte pruefe das Wetter und erstelle einen kurzen Reisevorschlag.
+```
+
+## Security
+
+Never commit `.env`, `data/credentials.json`, `data/token.json`, or generated social post data. Use `.env.example` as a template only.
 
 ## Team – HTW Berlin
 Smart Journey AI Group
