@@ -1,6 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
+from services.fallback_data import WEATHER_BARCELONA
 
 load_dotenv()
 
@@ -36,4 +37,6 @@ class WeatherService:
                 )
             return "\n".join(lines) if lines else "No weather data available."
         except requests.RequestException as exc:
+            if location.strip().lower() == "barcelona":
+                return f"{WEATHER_BARCELONA}\n\nLive weather request failed: {type(exc).__name__}"
             return f"Weather data could not be retrieved: {type(exc).__name__}"

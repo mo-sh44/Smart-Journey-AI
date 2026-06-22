@@ -3,6 +3,7 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
+from services.fallback_data import HOTELS_BARCELONA
 
 
 class HotelService:
@@ -23,13 +24,19 @@ class HotelService:
                     return result
 
             browser_result = self._search_with_browser(url)
-            if browser_result:
+            if browser_result and "unavailable" not in browser_result:
                 return browser_result
+            if city.strip().lower() == "barcelona":
+                reason = browser_result or f"HTTP {response.status_code}"
+                return f"{HOTELS_BARCELONA}\n\nLive hotel request failed: {reason}"
             return f"Hotel search failed (HTTP {response.status_code})."
         except requests.RequestException as exc:
             browser_result = self._search_with_browser(url)
-            if browser_result:
+            if browser_result and "unavailable" not in browser_result:
                 return browser_result
+            if city.strip().lower() == "barcelona":
+                reason = browser_result or type(exc).__name__
+                return f"{HOTELS_BARCELONA}\n\nLive hotel request failed: {reason}"
             return f"Hotel search unavailable: {type(exc).__name__}"
 
     def _build_url(self, city: str, checkin_date: str, checkout_date: str,

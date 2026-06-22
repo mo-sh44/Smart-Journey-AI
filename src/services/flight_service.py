@@ -4,6 +4,7 @@ import time
 import random
 import requests
 from bs4 import BeautifulSoup
+from services.fallback_data import FLIGHTS_BER_BCN
 
 
 class FlightService:
@@ -31,8 +32,12 @@ class FlightService:
                 delay = random.randint(1, 5)
 
         browser_result = self._search_with_browser(url)
-        if browser_result:
+        if browser_result and "unavailable" not in browser_result:
             return browser_result
+
+        if departure_code.upper() == "BER" and arrival_code.upper() == "BCN":
+            reason = browser_result or "No live flight data could be parsed."
+            return f"{FLIGHTS_BER_BCN}\n\nLive flight request failed: {reason}"
 
         return "Es gibt keine Fluege."
 
