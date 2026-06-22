@@ -1,6 +1,6 @@
 # Smart Journey AI - API- und MVP-Plan
 
-## Erwartung des Dozenten
+## Projektanforderungen
 
 Der naechste Projektstand soll zeigen, dass die technische Machbarkeit praktisch geprueft wurde. Besonders wichtig sind:
 
@@ -82,7 +82,7 @@ Warum gut fuer MVP:
 
 - klar testbar
 - gut erklaerbar
-- passt direkt zum Dozentenfeedback "APIs frueh testen"
+- passt direkt zur Anforderung, APIs frueh praktisch zu testen
 
 Erfolgskriterium:
 
@@ -95,6 +95,8 @@ Status: getestet, riskant
 Aktueller Projektstand:
 
 - Swoodoo wird ueber HTML-Scraping abgefragt.
+- ein Browser-Fallback mit Playwright wurde eingebaut.
+- der Parser wurde an die aktuelle Swoodoo-Ergebniskarte angepasst.
 
 Problem:
 
@@ -108,9 +110,9 @@ Alternative:
 
 MVP-Entscheidung:
 
-- Der Swoodoo-Test lieferte keine verwertbaren Flugdaten.
-- Fuer die Zwischenpraesentation werden Flug-Live-Daten nicht als kritischer Bestandteil verwendet.
-- Falls Flugoptionen gezeigt werden, werden Beispiel-/Mockdaten genutzt.
+- Swoodoo liefert sichtbare Flugangebote.
+- Der aktualisierte Parser extrahiert Preis, Airline, Hinflug und Rueckflug.
+- Das technische Risiko bleibt, weil Swoodoo keine offizielle API fuer diesen Zugriff ist.
 
 ### 4. Hoteldaten
 
@@ -119,6 +121,8 @@ Status: getestet, riskant
 Aktueller Projektstand:
 
 - Booking.com wird ueber HTML-Scraping abgefragt.
+- ein Browser-Fallback mit Playwright wurde eingebaut.
+- im Test wurden 5 Hoteloptionen fuer Barcelona extrahiert.
 
 Problem:
 
@@ -131,9 +135,9 @@ Alternative:
 
 MVP-Entscheidung:
 
-- Der Booking.com-Test lieferte HTTP 202 und keine direkt verwertbaren Hotelkarten.
-- Fuer die Zwischenpraesentation werden Hotel-Live-Daten nicht als kritischer Bestandteil verwendet.
-- Falls Hoteloptionen gezeigt werden, werden Beispiel-/Mockdaten genutzt.
+- Booking.com liefert aktuell echte Hoteloptionen.
+- Hotel-Live-Daten koennen im MVP gezeigt werden, wenn der Browser-Fallback verfuegbar ist.
+- Das technische Risiko bleibt, weil Booking.com-Scraping keine offizielle API-Anbindung ist.
 
 ### 5. TripAdvisor / Bewertungsdaten
 
@@ -176,16 +180,14 @@ Falls OpenAI Assistant live noch nicht stabil ist:
 
 ## Anpassung der Projektidee
 
-Falls Flug- und Hotel-APIs nicht stabil verfuegbar sind, wird das Projekt fuer den MVP spezialisiert:
+Falls Flug- und Hotelquellen waehrend einer Live-Demo blockiert werden, wird der MVP nicht inhaltlich aufgegeben, sondern technisch abgesichert:
 
 **Smart Journey AI als personalisierter Reiseplanungsassistent mit Wetter-, Kalender- und Interessenanalyse.**
 
-Flug und Hotel werden dann als:
+Flug und Hotel bleiben als Live-Services vorgesehen. Als Absicherung werden sie:
 
-- Beispieloptionen
-- Mockdaten
-- spaeter erweiterbare Schnittstellen
+- ueber Browser-Fallback getestet
+- mit klaren Fehlermeldungen versehen
+- perspektivisch ueber offizielle APIs stabilisiert
 
-behandelt.
-
-Das ist keine Schwaeche, sondern eine realistische Scope-Anpassung.
+Das ist eine realistische technische Absicherung, weil Scraping-Quellen nicht vollstaendig kontrollierbar sind.

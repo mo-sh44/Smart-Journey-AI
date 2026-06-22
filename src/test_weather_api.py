@@ -15,7 +15,11 @@ def main():
 
     result = WeatherService().get_forecast(destination_city, start_date, end_date)
 
-    if result and "could not be retrieved" not in result:
+    if result and "Fallback data" in result:
+        print("Weather API live request failed; fallback data is available.")
+        print()
+        print(result)
+    elif result and "could not be retrieved" not in result:
         print("Weather API works.")
         print()
         print(result)

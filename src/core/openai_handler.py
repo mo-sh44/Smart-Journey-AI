@@ -16,8 +16,8 @@ _TERMINAL = {"completed", "failed", "expired", "cancelled"}
 class OpenAIHandler:
     def __init__(self):
         self._client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self._thread_id = os.getenv("THREAD_ID")
         self._assistant_id = os.getenv("ASSISTANT_ID")
+        self._thread_id = self._client.beta.threads.create().id
         self._dispatcher = ToolDispatcher()
 
     def send_message(self, user_input: str) -> str:
@@ -59,7 +59,10 @@ class OpenAIHandler:
         for call in pending_calls:
             fn_name = call.function.name
             fn_args = json.loads(call.function.arguments)
+            print(f"Tool call: {fn_name}({fn_args})")
             result = self._dispatcher.dispatch(fn_name, fn_args)
+            preview = str(result).replace("\n", " ")[:500]
+            print(f"Tool result: {preview}")
             outputs.append({"tool_call_id": call.id, "output": str(result)})
         self._client.beta.threads.runs.submit_tool_outputs(
             thread_id=self._thread_id, run_id=run_id, tool_outputs=outputs
