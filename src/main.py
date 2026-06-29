@@ -9,7 +9,7 @@ from core.openai_handler import OpenAIHandler
 if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-load_dotenv()
+load_dotenv(override=True)
 
 st.set_page_config(page_title="Smart Journey AI", page_icon="SJ", layout="wide")
 
