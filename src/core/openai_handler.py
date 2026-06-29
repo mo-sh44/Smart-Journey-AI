@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from core.tool_dispatcher import ToolDispatcher
 
-load_dotenv()
+load_dotenv(override=True)
 
 _WAITING = {"queued", "in_progress", "cancelling"}
 _TERMINAL = {"completed", "failed", "expired", "cancelled"}
