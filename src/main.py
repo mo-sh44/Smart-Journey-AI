@@ -1,10 +1,14 @@
 import asyncio
 import sys
+from datetime import datetime, timedelta
 
 import streamlit as st
 from dotenv import load_dotenv
 from core.demo_mode import create_demo_travel_plan
 from core.openai_handler import OpenAIHandler
+from services.memory_service import MemoryService
+from services.monitoring_service import MonitoringService
+from services.travel_agency_service import TravelAgencyService
 
 if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -21,6 +25,44 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 [data-testid="stSidebar"] { background: #f5f7fb; border-right: 1px solid #dfe5ef; }
 .hero { font-size: 2.1rem; font-weight: 700; color: #1f4e79; margin-bottom: 0.2rem; }
 .sub { color: #5f6f89; font-size: 1rem; margin-top: 0.2rem; }
+.status-card {
+    border: 1px solid #dbe4ef;
+    border-radius: 8px;
+    padding: 0.8rem;
+    background: #f8fafc;
+    margin-bottom: 0.7rem;
+}
+.status-card strong { color: #1f4e79; }
+.trip-card {
+    border: 1px solid #dbe4ef;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #ffffff;
+    margin-bottom: 0.85rem;
+}
+.section-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.9rem;
+    background: #fbfdff;
+    margin-bottom: 0.8rem;
+}
+.alert-box {
+    border-left: 4px solid #1f4e79;
+    padding: 0.75rem 0.9rem;
+    background: #f1f7ff;
+    margin: 0.5rem 0 0.8rem 0;
+}
+.muted { color: #64748b; font-size: 0.9rem; }
+.pill {
+    display: inline-block;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    margin: 0.1rem 0.2rem 0.1rem 0;
+    background: #f8fafc;
+    font-size: 0.82rem;
+}
 div[data-testid="stButton"] > button {
     background: #ffffff;
     border: 1px solid #cbd5e1;
@@ -37,17 +79,170 @@ div[data-testid="stButton"] > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
+memory_service = MemoryService()
+monitoring_service = MonitoringService()
+agency_service = TravelAgencyService()
+AUTO_CHECK_INTERVAL_MINUTES = 30
+
+
+def create_demo_trip():
+    return memory_service.save_trip(
+        {
+            "destination": "Barcelona",
+            "departure_code": "BER",
+            "arrival_code": "BCN",
+            "start_date": "2026-07-10",
+            "end_date": "2026-07-14",
+            "adults": 1,
+            "rooms": 1,
+            "weather_summary": "2026-07-10: 29.0°C - 33.7°C, Partially cloudy",
+            "flight_summary": "Option 1: Lufthansa | Price: 176 EUR | Outbound: 2h 15m (direct) | Return: 2h 20m (direct)",
+            "hotel_summary": "Hotel 1: W Barcelona | Preis: 223 EUR/Nacht | Bewertung: 8.9 | Entfernung: 0.8 km",
+            "personalization_notes": "Vegan food, culture, cafes, beach, and photography spots.",
+            "daily_budget": 60,
+            "status": "confirmed",
+        }
+    )
+
+
+def trip_label(trip):
+    return f"{trip.get('destination', 'Trip')} · {trip.get('start_date', '?')} to {trip.get('end_date', '?')} · {trip.get('id')}"
+
+
+def trip_chat_prompt(trip):
+    return (
+        "Ich möchte zu meiner gespeicherten Reiseakte weiterfragen.\n"
+        f"Trip ID: {trip.get('id')}\n"
+        f"Ziel: {trip.get('destination')}\n"
+        f"Zeitraum: {trip.get('start_date')} bis {trip.get('end_date')}\n"
+        f"Flug: {trip.get('flight_summary', 'noch nicht gespeichert')}\n"
+        f"Hotel: {trip.get('hotel_summary', 'noch nicht gespeichert')}\n"
+        f"Wetter: {trip.get('weather_summary', 'noch nicht gespeichert')}\n"
+        "Bitte beantworte meine nächste Frage mit Bezug auf diese Reiseakte."
+    )
+
+
+def render_alert_summary(alert):
+    if not alert:
+        st.info("No monitoring result available yet.")
+        return
+    message = alert.get("message", "No update message.")
+    recommendation = alert.get("recommendation", "No recommendation available.")
+    checked_at = alert.get("checked_at", "unknown")
+    changes = alert.get("changes", [])
+
+    if alert.get("changes_detected"):
+        st.warning(message)
+    else:
+        st.success(message)
+    st.markdown(
+        f"<div class='alert-box'><strong>Last checked:</strong> {checked_at}<br>"
+        f"<strong>Recommendation:</strong> {recommendation}</div>",
+        unsafe_allow_html=True,
+    )
+    if changes:
+        st.markdown("**Detected changes**")
+        for change in changes:
+            st.write(f"- {change.get('summary', change.get('type', 'Update'))}")
+
+
+def render_trip_card(trip, compact=False):
+    title = f"{trip.get('destination', 'Unknown trip')} · {trip.get('start_date', '?')} to {trip.get('end_date', '?')}"
+    st.markdown(
+        f"<div class='trip-card'><strong>{title}</strong><br>"
+        f"<span class='muted'>Status: {trip.get('status', 'planned')} · Last check: {trip.get('last_checked_at', 'not checked yet')}</span></div>",
+        unsafe_allow_html=True,
+    )
+    if compact:
+        return
+    cols = st.columns(3)
+    budget = trip.get("budget") or agency_service.estimate_budget(trip)
+    risk = trip.get("risk") or agency_service.risk_score(trip)
+    cols[0].metric("Budget", f"{budget.get('estimated_total', 0)} {budget.get('currency', 'EUR')}")
+    cols[1].metric("Risk", risk.get("level", "low").title())
+    cols[2].metric("Alerts", len(trip.get("alerts", [])))
+    detail_cols = st.columns(2)
+    with detail_cols[0]:
+        st.markdown("<div class='section-box'><strong>Flight</strong></div>", unsafe_allow_html=True)
+        st.write(trip.get("flight_summary", "No flight saved."))
+        st.markdown("<div class='section-box'><strong>Hotel</strong></div>", unsafe_allow_html=True)
+        st.write(trip.get("hotel_summary", "No hotel saved."))
+    with detail_cols[1]:
+        st.markdown("<div class='section-box'><strong>Weather</strong></div>", unsafe_allow_html=True)
+        st.write(trip.get("weather_summary", "No weather saved."))
+        st.markdown("<div class='section-box'><strong>Personalization</strong></div>", unsafe_allow_html=True)
+        st.write(trip.get("personalization_notes", "No personalization notes saved."))
+    with st.expander("Packing list and risk details"):
+        preferences = memory_service.get_user_memory().get("preferences", {})
+        for item in agency_service.create_packing_list(trip, preferences):
+            st.write(f"- {item}")
+        st.markdown("**Risk reasons**")
+        for reason in risk.get("reasons", []):
+            st.write(f"- {reason}")
+    alerts = trip.get("alerts", [])
+    if alerts:
+        render_alert_summary(alerts[-1])
+
+
+def is_monitoring_due(trip):
+    last_checked = trip.get("last_checked_at")
+    if not last_checked:
+        return True
+    try:
+        checked_at = datetime.fromisoformat(last_checked)
+    except ValueError:
+        return True
+    return datetime.now() - checked_at >= timedelta(minutes=AUTO_CHECK_INTERVAL_MINUTES)
+
 with st.sidebar:
     st.markdown("<h2 style='color:#1f4e79;'>Smart Journey AI</h2><p style='color:#5f6f89;font-size:0.9rem;'>AI-powered travel planning</p>", unsafe_allow_html=True)
+    st.divider()
+    st.markdown("### Demo profile")
+    memory = memory_service.get_user_memory()
+    preferences = memory.get("preferences", {})
+    with st.expander("Saved preferences", expanded=True):
+        diet = st.text_input("Diet", value=preferences.get("diet", ""), placeholder="vegan, vegetarian, halal...")
+        hotel_style = st.text_input("Hotel style", value=preferences.get("hotel_style", ""), placeholder="central, boutique, budget...")
+        budget = st.text_input("Budget", value=preferences.get("budget", ""), placeholder="low, medium, premium...")
+        interests_text = st.text_input(
+            "Interests",
+            value=", ".join(preferences.get("interests", [])) if isinstance(preferences.get("interests"), list) else str(preferences.get("interests", "")),
+            placeholder="culture, cafes, photography",
+        )
+        if st.button("Save profile", use_container_width=True):
+            memory_service.update_user_memory(
+                {
+                    "diet": diet,
+                    "hotel_style": hotel_style,
+                    "budget": budget,
+                    "interests": [item.strip() for item in interests_text.split(",") if item.strip()],
+                }
+            )
+            st.success("Profile saved.")
+    saved_trips = memory_service.get_saved_trips()
+    with st.expander(f"Travel files ({len(saved_trips)})", expanded=False):
+        if st.button("Create demo travel file", use_container_width=True):
+            create_demo_trip()
+            st.rerun()
+        if not saved_trips:
+            st.caption("No saved trips yet.")
+        for trip in saved_trips[-3:]:
+            st.markdown(
+                f"<div class='status-card'><strong>{trip.get('destination', 'Trip')}</strong><br>"
+                f"{trip.get('start_date', '?')} to {trip.get('end_date', '?')}<br>"
+                f"<span class='muted'>{trip.get('status', 'planned')}</span></div>",
+                unsafe_allow_html=True,
+            )
     st.divider()
     st.markdown("### How it works")
     st.markdown(
         "1. 💬 Tell me where to go\n"
-        "2. 📅 I check your calendar\n"
-        "3. ☀️ I verify the weather\n"
-        "4. ✈️ I find flights and hotels\n"
-        "5. 📧 You get a confirmation email\n"
-        "6. 🌐 Trip can be shared on BlueSky"
+        "2. 👤 I remember your preferences\n"
+        "3. 📅 I check your calendar\n"
+        "4. ☀️ I verify the weather\n"
+        "5. ✈️ I find flights and hotels\n"
+        "6. 📧 You get a confirmation email\n"
+        "7. 🌐 Trip can be shared on BlueSky"
     )
     st.divider()
     mode = st.radio(
@@ -55,10 +250,17 @@ with st.sidebar:
         ["OpenAI Assistant", "Demo mode"],
         help="OpenAI Assistant uses tools. Demo mode is a deterministic fallback.",
     )
+    auto_monitoring = st.checkbox(
+        "Auto-check saved trips every 30 min",
+        value=True,
+        help="Works while the app is open. For the demo, use 'Check updates now'.",
+    )
     st.divider()
     st.markdown("### Quick Start")
     for prompt in [
+        "Merke dir: Ich bin vegan, mag zentrale Hotels und interessiere mich fuer Kultur, Cafes und Fotospots.",
         "Ich plane eine Reise von Berlin nach Barcelona vom 10.07.2026 bis 14.07.2026.",
+        "Aktualisiere meine gespeicherte Barcelona-Reise und pruefe, ob sich das Wetter geaendert hat.",
         "City break in Europe this summer",
         "Plan a beach holiday next month",
         "Winter trip to the Alps",
@@ -68,17 +270,84 @@ with st.sidebar:
     st.divider()
     st.caption("HTW Berlin project prototype")
 
-st.markdown("<h1 class='hero'>Smart Journey AI</h1><p class='sub'>Travel planning prototype with live weather data and agent-ready tools.</p>", unsafe_allow_html=True)
+st.markdown("<h1 class='hero'>Smart Journey AI</h1><p class='sub'>From chatbot to personal travel agency: memory, tools, travel files, and live updates.</p>", unsafe_allow_html=True)
 st.divider()
+
+tab_chat, tab_trips, tab_alerts = st.tabs(["Assistant", "Travel files", "Monitoring"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if mode == "OpenAI Assistant" and "handler" not in st.session_state:
     st.session_state.handler = OpenAIHandler()
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+with tab_trips:
+    st.subheader("Saved travel files")
+    trips = memory_service.get_saved_trips()
+    if st.button("Create Barcelona demo file", key="create_demo_main"):
+        create_demo_trip()
+        st.rerun()
+    if not trips:
+        st.info("No travel files saved yet. Create a demo file or confirm a trip through the assistant.")
+    else:
+        trip_options = {trip_label(trip): trip["id"] for trip in reversed(trips)}
+        selected_trip_label = st.selectbox("Open travel file", list(trip_options.keys()), key="travel_file_select")
+        selected_trip = memory_service.get_trip(trip_options[selected_trip_label])
+        if selected_trip:
+            top_cols = st.columns([1, 1, 1])
+            if top_cols[0].button("Chat about this trip", use_container_width=True):
+                st.session_state.pending = trip_chat_prompt(selected_trip)
+                st.rerun()
+            if top_cols[1].button("Check this trip now", use_container_width=True):
+                with st.spinner("Refreshing this travel file..."):
+                    result = monitoring_service.check_trip_updates(selected_trip["id"])
+                render_alert_summary(result.get("alert", {}))
+                st.rerun()
+            if top_cols[2].button("Duplicate demo file", use_container_width=True):
+                create_demo_trip()
+                st.rerun()
+            render_trip_card(selected_trip)
+
+with tab_alerts:
+    st.subheader("Monitoring and updates")
+    trips = memory_service.get_saved_trips()
+    if not trips:
+        st.info("No trip available for monitoring yet.")
+    else:
+        if auto_monitoring:
+            st.markdown(
+                "<meta http-equiv='refresh' content='1800'>",
+                unsafe_allow_html=True,
+            )
+        options = {
+            f"{trip.get('destination', 'Trip')} ({trip.get('start_date', '?')}) - {trip.get('id')}": trip["id"]
+            for trip in trips
+        }
+        selected_label = st.selectbox("Select trip", list(options.keys()))
+        selected_trip = memory_service.get_trip(options[selected_label])
+        if auto_monitoring and selected_trip and is_monitoring_due(selected_trip):
+            with st.spinner("Automatic monitoring check is running..."):
+                auto_result = monitoring_service.check_trip_updates(options[selected_label])
+            auto_alert = auto_result.get("alert", {})
+            if auto_alert.get("changes_detected"):
+                st.warning(f"Automatic update: {auto_alert.get('message')}")
+            else:
+                st.info(f"Automatic update: {auto_alert.get('message')}")
+        if st.button("Check updates now", type="primary"):
+            with st.spinner("Checking weather, flight, and hotel updates..."):
+                result = monitoring_service.check_trip_updates(options[selected_label])
+            alert = result.get("alert", {})
+            render_alert_summary(alert)
+        selected_trip = memory_service.get_trip(options[selected_label])
+        if selected_trip:
+            if st.button("Open assistant chat for this trip", use_container_width=True):
+                st.session_state.pending = trip_chat_prompt(selected_trip)
+                st.rerun()
+            render_trip_card(selected_trip)
+
+with tab_chat:
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
 
 def process(user_input: str):
@@ -99,9 +368,10 @@ def process(user_input: str):
         st.markdown(response)
 
 
-if "pending" in st.session_state:
-    process(st.session_state.pop("pending"))
-    st.rerun()
+with tab_chat:
+    if "pending" in st.session_state:
+        process(st.session_state.pop("pending"))
+        st.rerun()
 
-if user_input := st.chat_input("Where would you like to travel?"):
-    process(user_input)
+    if user_input := st.chat_input("Where would you like to travel?"):
+        process(user_input)

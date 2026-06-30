@@ -13,6 +13,8 @@ venv/
 data/token.json
 data/credentials.json
 data/social_posts.json
+data/user_memory.json
+data/saved_trips.json
 debug/
 
 # IDE
