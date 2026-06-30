@@ -28,6 +28,9 @@ users plan unforgettable trips that match their lifestyle, preferences, schedule
 ### Step 1 – Orient Yourself
 Always call get_current_date first. Search the user profile and Bluesky/social posts
 (file_search) to learn their preferences, interests, travel style, and activity patterns.
+Call get_user_memory to include saved long-term preferences such as diet, hotel style,
+budget, mobility needs, and interests. If the user explicitly says "remember", "save",
+or "merke dir", call save_user_memory.
 
 ### Step 2 – Find Travel Window
 - No dates given? Call get_calendar_events for the next 3–6 months.
@@ -49,20 +52,30 @@ If a tool fails, explain that the system tried the source and show a short fallb
 ### Step 5 – Build Itinerary
 Draft a day-by-day plan with a packing list. If Bluesky/social posts are available,
 explain briefly which interests influenced the recommendation.
+Call estimate_trip_budget and calculate_risk_score when enough trip details are available.
+Call create_packing_list when the user asks for preparation, packing, or a complete agency-style plan.
 
 ### Step 6 – Ask User to Choose
 > "Please choose your preferred flight (1/2/3) and hotel (1/2/3)."
 
 ### Step 7 – Finalise
 Once confirmed:
+0. Call run_quality_check for the selected plan.
+0. Call save_trip_plan to store the trip as a travel file for later updates.
 1. Call send_travel_email with complete details and .ics attachment.
 2. Call publish_travel_post (≤300 chars, travel emojis, #SmartJourneyAI).
+
+### Step 8 – Travel Agency Follow-up
+If the user asks to update, monitor, or re-check a saved trip, call get_saved_trips
+and check_trip_updates. Explain what changed and suggest practical adjustments,
+for example indoor activities during extreme heat or switching hotels if prices changed.
 
 ## Guidelines
 - Always use get_current_date before planning.
 - For trip planning requests with destination and dates, always call get_weather_forecast,
   search_flights, and search_hotels before writing the final recommendation.
 - Use Bluesky/social posts from file_search when the user asks for personalization.
+- Use saved memory for personalization even if the user does not repeat preferences.
 - Keep replies structured with headings and bullets.
 - If a service fails, inform the user politely and suggest alternatives.
 """
@@ -77,6 +90,16 @@ TOOLS = [
     {"type": "function", "function": {"name": "send_travel_email", "description": "Send a travel confirmation email with .ics attachment.", "strict": True, "parameters": {"type": "object", "properties": {"recipient_email": {"type": "string"}, "subject": {"type": "string"}, "body": {"type": "string"}, "calendar_event": {"type": "object", "properties": {"title": {"type": "string"}, "start": {"type": "string"}, "end": {"type": "string"}, "location": {"type": "string"}, "description": {"type": "string"}}, "required": ["title", "start", "end", "location", "description"], "additionalProperties": False}}, "required": ["recipient_email", "subject", "body", "calendar_event"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "publish_travel_post", "description": "Publish a post on Bluesky about the upcoming trip.", "strict": True, "parameters": {"type": "object", "properties": {"post_text": {"type": "string"}}, "required": ["post_text"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "get_calendar_events", "description": "Get user's Google Calendar events and Berlin holidays.", "strict": True, "parameters": {"type": "object", "properties": {"start_date": {"type": "string"}, "end_date": {"type": "string"}}, "required": ["start_date", "end_date"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "get_user_memory", "description": "Load saved long-term user preferences for personalization.", "strict": True, "parameters": {"type": "object", "properties": {}, "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "save_user_memory", "description": "Save long-term user preferences such as diet, budget, hotel style, interests, or mobility needs.", "parameters": {"type": "object", "properties": {"preferences": {"type": "object", "additionalProperties": True}}, "required": ["preferences"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "get_saved_trips", "description": "Load saved travel files for later updates or monitoring.", "strict": True, "parameters": {"type": "object", "properties": {}, "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "save_trip_plan", "description": "Save a confirmed or planned trip as a travel file.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "update_trip_weather", "description": "Update the weather summary of a saved trip and report whether something changed.", "strict": True, "parameters": {"type": "object", "properties": {"trip_id": {"type": "string"}, "weather_summary": {"type": "string"}}, "required": ["trip_id", "weather_summary"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "run_quality_check", "description": "Evaluate whether a trip plan contains destination, dates, weather, flights, hotels, and personalization.", "parameters": {"type": "object", "properties": {"plan": {"type": "object", "additionalProperties": True}}, "required": ["plan"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "check_trip_updates", "description": "Re-check a saved trip and detect changed weather, flight, or hotel data.", "strict": True, "parameters": {"type": "object", "properties": {"trip_id": {"type": "string"}}, "required": ["trip_id"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "estimate_trip_budget", "description": "Estimate total trip budget from saved or selected flight, hotel, and daily-cost data.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "create_packing_list", "description": "Create a packing list based on trip weather and saved user preferences.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}, "preferences": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "calculate_risk_score", "description": "Calculate travel risk based on data completeness, alerts, and reliability.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
 ]
 
 

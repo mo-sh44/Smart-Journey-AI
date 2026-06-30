@@ -27,7 +27,11 @@ class HotelService:
             return self._get_fallback_hotels(city, adults, rooms)
         except requests.RequestException:
             browser_result = self._search_with_browser(url)
-            if browser_result and "unavailable" not in browser_result:
+            if (
+                browser_result
+                and "unavailable" not in browser_result
+                and "requires Playwright" not in browser_result
+            ):
                 return browser_result
             return self._get_fallback_hotels(city, adults, rooms)
 
