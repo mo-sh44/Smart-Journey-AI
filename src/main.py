@@ -9,6 +9,7 @@ from core.openai_handler import OpenAIHandler
 from services.memory_service import MemoryService
 from services.monitoring_service import MonitoringService
 from services.travel_agency_service import TravelAgencyService
+from services.travel_window_service import TravelWindowService
 
 if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -82,6 +83,7 @@ div[data-testid="stButton"] > button:hover {
 memory_service = MemoryService()
 monitoring_service = MonitoringService()
 agency_service = TravelAgencyService()
+travel_window_service = TravelWindowService()
 AUTO_CHECK_INTERVAL_MINUTES = 30
 
 
@@ -144,6 +146,13 @@ def render_alert_summary(alert):
         st.markdown("**Detected changes**")
         for change in changes:
             st.write(f"- {change.get('summary', change.get('type', 'Update'))}")
+    action_plan = alert.get("action_plan", [])
+    if action_plan:
+        st.markdown("**Suggested action plan**")
+        for action in action_plan:
+            st.write(f"- {action}")
+    if alert.get("next_action"):
+        st.info(f"Next action: {alert['next_action']}")
 
 
 def render_trip_card(trip, compact=False):
@@ -259,8 +268,10 @@ with st.sidebar:
     st.markdown("### Quick Start")
     for prompt in [
         "Merke dir: Ich bin vegan, mag zentrale Hotels und interessiere mich fuer Kultur, Cafes und Fotospots.",
+        "Ich möchte im August 2026 für 5 Tage nach Barcelona. Finde den besten Reisezeitraum.",
         "Ich plane eine Reise von Berlin nach Barcelona vom 10.07.2026 bis 14.07.2026.",
         "Aktualisiere meine gespeicherte Barcelona-Reise und pruefe, ob sich das Wetter geaendert hat.",
+        "Das Hotel ist mir zu teuer. Merke dir bitte, dass ich guenstige zentrale Hotels bevorzuge.",
         "City break in Europe this summer",
         "Plan a beach holiday next month",
         "Winter trip to the Alps",
@@ -273,7 +284,7 @@ with st.sidebar:
 st.markdown("<h1 class='hero'>Smart Journey AI</h1><p class='sub'>From chatbot to personal travel agency: memory, tools, travel files, and live updates.</p>", unsafe_allow_html=True)
 st.divider()
 
-tab_chat, tab_trips, tab_alerts = st.tabs(["Assistant", "Travel files", "Monitoring"])
+tab_chat, tab_trips, tab_windows, tab_alerts = st.tabs(["Assistant", "Travel files", "Best travel window", "Monitoring"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -343,6 +354,58 @@ with tab_alerts:
                 st.session_state.pending = trip_chat_prompt(selected_trip)
                 st.rerun()
             render_trip_card(selected_trip)
+
+with tab_windows:
+    st.subheader("Best travel window")
+    st.caption("The agent checks calendar availability, holidays, weekends, and weather to recommend useful travel windows.")
+    window_cols = st.columns([1.2, 1, 1, 0.8])
+    destination = window_cols[0].text_input("Destination", value="Barcelona")
+    earliest_date = window_cols[1].date_input("Earliest date", value=datetime(2026, 8, 1))
+    latest_date = window_cols[2].date_input("Latest date", value=datetime(2026, 8, 31))
+    duration_days = window_cols[3].number_input("Days", min_value=2, max_value=21, value=5)
+    if st.button("Find best travel windows", type="primary", use_container_width=True):
+        with st.spinner("Checking calendar, holidays, weekends, and weather..."):
+            result = travel_window_service.find_best_windows(
+                destination=destination,
+                earliest_date=earliest_date.isoformat(),
+                latest_date=latest_date.isoformat(),
+                duration_days=int(duration_days),
+            )
+        if "error" in result:
+            st.error(result.get("message", result["error"]))
+        else:
+            st.success(result["message"])
+            summary = result.get("calendar_summary", {})
+            if summary.get("warning"):
+                st.warning(summary["warning"])
+            metric_cols = st.columns(2)
+            metric_cols[0].metric("Busy days", summary.get("busy_days", 0))
+            metric_cols[1].metric("Holiday days", summary.get("holiday_days", 0))
+            for index, window in enumerate(result.get("best_windows", []), start=1):
+                with st.container():
+                    st.markdown(
+                        f"<div class='trip-card'><strong>Option {index}: {window['start_date']} to {window['end_date']}</strong><br>"
+                        f"<span class='muted'>Score: {window['score']} · Weekend days: {window['weekend_days']} · Holidays: {window['holidays_inside']}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.write(window.get("reason", ""))
+                    st.write(window.get("weather_summary", ""))
+                    st.info(window.get("recommendation", ""))
+
+    st.divider()
+    st.subheader("Feedback learning")
+    feedback_text = st.text_area(
+        "Tell Smart Journey AI what should be remembered",
+        placeholder="Example: Das Hotel ist mir zu teuer. Ich bevorzuge vegetarische Restaurants und zentrale Hotels.",
+    )
+    if st.button("Learn from feedback", use_container_width=True):
+        result = memory_service.learn_from_feedback(feedback_text)
+        st.success(result["message"])
+        learned = result.get("learned", [])
+        if learned:
+            st.markdown("**Learned preferences**")
+            for item in learned:
+                st.write(f"- {item}")
 
 with tab_chat:
     for msg in st.session_state.messages:

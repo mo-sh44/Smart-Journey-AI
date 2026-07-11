@@ -76,6 +76,16 @@ def main():
     )
 
     show_result(
+        "Feedback learning tool",
+        dispatcher.dispatch(
+            "learn_from_feedback",
+            {
+                "feedback": "Das Hotel ist mir zu teuer. Merke dir bitte, dass ich guenstige zentrale Hotels und vegetarische Restaurants bevorzuge."
+            },
+        ),
+    )
+
+    show_result(
         "Quality check tool",
         dispatcher.dispatch(
             "run_quality_check",
@@ -133,6 +143,20 @@ def main():
     show_result(
         "Risk score tool",
         dispatcher.dispatch("calculate_risk_score", {"trip": trip}),
+    )
+
+    show_result(
+        "Best travel window tool",
+        dispatcher.dispatch(
+            "find_best_travel_windows",
+            {
+                "destination": "Barcelona",
+                "earliest_date": "2026-08-01",
+                "latest_date": "2026-08-31",
+                "duration_days": 5,
+                "max_results": 2,
+            },
+        ),
     )
 
     import json

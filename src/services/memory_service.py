@@ -26,6 +26,87 @@ class MemoryService:
         self._write_json(MEMORY_FILE, memory)
         return memory
 
+    def learn_from_feedback(self, feedback: str) -> dict:
+        feedback_text = (feedback or "").strip()
+        memory = self.get_user_memory()
+        preferences = memory.setdefault("preferences", {})
+        learned = []
+        text = feedback_text.lower()
+
+        diet_keywords = {
+            "vegan": "vegan",
+            "vegetarisch": "vegetarian",
+            "vegetarian": "vegetarian",
+            "halal": "halal",
+            "glutenfrei": "gluten-free",
+            "gluten-free": "gluten-free",
+        }
+        for keyword, value in diet_keywords.items():
+            if keyword in text:
+                preferences["diet"] = value
+                learned.append(f"Diet preference: {value}")
+                break
+
+        if any(word in text for word in ["zu teuer", "guenstig", "günstig", "billig", "cheap", "unter 120"]):
+            preferences["budget"] = "budget-conscious"
+            learned.append("Budget preference: budget-conscious")
+        elif any(word in text for word in ["premium", "luxus", "luxury", "komfort"]):
+            preferences["budget"] = "premium comfort"
+            learned.append("Budget preference: premium comfort")
+
+        if any(word in text for word in ["zentral", "central", "innenstadt", "city center"]):
+            preferences["hotel_style"] = "central location"
+            learned.append("Hotel preference: central location")
+        elif any(word in text for word in ["boutique", "charmant", "authentisch"]):
+            preferences["hotel_style"] = "boutique or authentic hotel"
+            learned.append("Hotel preference: boutique/authentic")
+
+        interest_keywords = {
+            "museum": "museums",
+            "museen": "museums",
+            "cafe": "cafes",
+            "café": "cafes",
+            "strand": "beach",
+            "beach": "beach",
+            "fotografie": "photography",
+            "photo": "photography",
+            "foto": "photography",
+            "wandern": "hiking",
+            "hiking": "hiking",
+            "architektur": "architecture",
+            "architecture": "architecture",
+        }
+        interests = preferences.get("interests", [])
+        if isinstance(interests, str):
+            interests = [interests]
+        for keyword, interest in interest_keywords.items():
+            if keyword in text and interest not in interests:
+                interests.append(interest)
+                learned.append(f"Interest: {interest}")
+        preferences["interests"] = interests
+
+        if any(word in text for word in ["weniger laufen", "barrierefrei", "mobility", "accessible"]):
+            preferences["mobility"] = "low walking distance / accessible options"
+            learned.append("Mobility preference: low walking distance")
+
+        memory.setdefault("feedback_history", []).append(
+            {
+                "created_at": datetime.now().isoformat(timespec="seconds"),
+                "feedback": feedback_text,
+                "learned": learned,
+            }
+        )
+        memory["feedback_history"] = memory["feedback_history"][-20:]
+        memory["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        self._write_json(MEMORY_FILE, memory)
+        return {
+            "memory": memory,
+            "learned": learned,
+            "message": "Feedback was stored. Future recommendations will use the updated preferences."
+            if learned
+            else "Feedback was stored, but no specific travel preference was detected automatically.",
+        }
+
     def get_saved_trips(self) -> list[dict]:
         return self._read_json(TRIPS_FILE, [])
 

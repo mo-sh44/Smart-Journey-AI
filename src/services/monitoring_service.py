@@ -50,6 +50,8 @@ class MonitoringService:
             "changes": changes,
             "message": self._message(changes),
             "recommendation": self._recommendation(changes),
+            "action_plan": self._action_plan(changes),
+            "next_action": self._next_action(changes),
             "risk": self.agency.risk_score(preview_trip),
             "budget": self.agency.estimate_budget(preview_trip),
         }
@@ -101,3 +103,31 @@ class MonitoringService:
         if "hotels" in changed:
             suggestions.append("Check whether the saved hotel is still the best value.")
         return " ".join(suggestions)
+
+    def _action_plan(self, changes: list[dict]) -> list[str]:
+        if not changes:
+            return [
+                "Keep the current travel file.",
+                "Run the next monitoring check before final confirmation.",
+            ]
+
+        changed = {change["type"] for change in changes}
+        actions = ["Review the refreshed travel file before sending a final confirmation."]
+        if "weather" in changed:
+            actions.append("Adjust the daily itinerary and add indoor alternatives if needed.")
+        if "flights" in changed:
+            actions.append("Compare the new flight options and decide whether the selected flight should change.")
+        if "hotels" in changed:
+            actions.append("Compare the new hotel options against the saved hotel preference and budget.")
+        actions.append("After approval, send an updated email confirmation with the current details.")
+        return actions
+
+    def _next_action(self, changes: list[dict]) -> str:
+        if not changes:
+            return "No user action required."
+        changed = {change["type"] for change in changes}
+        if "flights" in changed or "hotels" in changed:
+            return "Ask the user whether Smart Journey AI should update the selected flight or hotel."
+        if "weather" in changed:
+            return "Ask the user whether the itinerary should be adjusted for the new weather."
+        return "Ask the user whether the refreshed travel file should be confirmed."
