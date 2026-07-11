@@ -245,7 +245,7 @@ def render_alert_summary(alert):
         st.info(f"Next action: {alert['next_action']}")
 
 
-def render_trip_card(trip, compact=False, show_monitoring=False):
+def render_trip_card(trip, compact=False, show_monitoring=False, show_packing=True):
     title = f"{trip.get('destination', 'Unknown trip')} · {trip.get('start_date', '?')} to {trip.get('end_date', '?')}"
     st.markdown(
         f"<div class='trip-card'><strong>{title}</strong><br>"
@@ -275,13 +275,14 @@ def render_trip_card(trip, compact=False, show_monitoring=False):
         notes = trip.get("personalization_notes", "No personalization notes saved.")
         st.markdown(f"<div class='option-card'>{notes}</div>", unsafe_allow_html=True)
 
-    with st.expander("Packing list and risk details"):
-        preferences = memory_service.get_user_memory().get("preferences", {})
-        for item in agency_service.create_packing_list(trip, preferences):
-            st.write(f"- {item}")
-        st.markdown("**Risk reasons**")
-        for reason in risk.get("reasons", []):
-            st.write(f"- {reason}")
+    if show_packing:
+        with st.expander("Packing list and risk details"):
+            preferences = memory_service.get_user_memory().get("preferences", {})
+            for item in agency_service.create_packing_list(trip, preferences):
+                st.write(f"- {item}")
+            st.markdown("**Risk reasons**")
+            for reason in risk.get("reasons", []):
+                st.write(f"- {reason}")
     alerts = trip.get("alerts", [])
     if show_monitoring and alerts:
         render_alert_summary(alerts[-1])
@@ -460,7 +461,7 @@ with tab_alerts:
             if latest_alerts:
                 render_alert_summary(latest_alerts[-1])
             with st.expander("Open refreshed travel file"):
-                render_trip_card(selected_trip)
+                render_trip_card(selected_trip, show_packing=False)
 
 with tab_windows:
     st.subheader("Best travel window")
