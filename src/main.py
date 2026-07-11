@@ -265,15 +265,12 @@ def render_trip_card(trip, compact=False, show_monitoring=False, show_packing=Tr
         unsafe_allow_html=True,
     )
 
-    detail_cols = st.columns([1, 1])
-    with detail_cols[0]:
-        render_option_list("Flights", trip.get("flight_summary", ""))
-        render_option_list("Hotels", trip.get("hotel_summary", ""))
-    with detail_cols[1]:
-        render_weather_list(trip.get("weather_summary", ""))
-        st.markdown("**Personalization**")
-        notes = trip.get("personalization_notes", "No personalization notes saved.")
-        st.markdown(f"<div class='option-card'>{notes}</div>", unsafe_allow_html=True)
+    render_option_list("Flights", trip.get("flight_summary", ""))
+    render_option_list("Hotels", trip.get("hotel_summary", ""))
+    render_weather_list(trip.get("weather_summary", ""))
+    st.markdown("**Personalization**")
+    notes = trip.get("personalization_notes", "No personalization notes saved.")
+    st.markdown(f"<div class='option-card'>{notes}</div>", unsafe_allow_html=True)
 
     if show_packing:
         with st.expander("Packing list and risk details"):
