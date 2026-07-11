@@ -31,10 +31,14 @@ Always call get_current_date first. Search the user profile and Bluesky/social p
 Call get_user_memory to include saved long-term preferences such as diet, hotel style,
 budget, mobility needs, and interests. If the user explicitly says "remember", "save",
 or "merke dir", call save_user_memory.
+If the user gives feedback about a recommendation, for example "too expensive",
+"I prefer central hotels", or "remember that I am vegetarian", call learn_from_feedback.
 
 ### Step 2 – Find Travel Window
 - No dates given? Call get_calendar_events for the next 3–6 months.
   Find conflict-free windows that use public holidays efficiently.
+- If the user asks for the best travel period or only gives a broad month/range,
+  call find_best_travel_windows and explain why the selected windows are useful.
 - Dates given? Check for calendar conflicts.
 
 ### Step 3 – Destination & Weather
@@ -69,6 +73,7 @@ Once confirmed:
 If the user asks to update, monitor, or re-check a saved trip, call get_saved_trips
 and check_trip_updates. Explain what changed and suggest practical adjustments,
 for example indoor activities during extreme heat or switching hotels if prices changed.
+If check_trip_updates returns an action_plan or next_action, summarize it clearly.
 
 ## Guidelines
 - Always use get_current_date before planning.
@@ -92,6 +97,7 @@ TOOLS = [
     {"type": "function", "function": {"name": "get_calendar_events", "description": "Get user's Google Calendar events and Berlin holidays.", "strict": True, "parameters": {"type": "object", "properties": {"start_date": {"type": "string"}, "end_date": {"type": "string"}}, "required": ["start_date", "end_date"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "get_user_memory", "description": "Load saved long-term user preferences for personalization.", "strict": True, "parameters": {"type": "object", "properties": {}, "additionalProperties": False}}},
     {"type": "function", "function": {"name": "save_user_memory", "description": "Save long-term user preferences such as diet, budget, hotel style, interests, or mobility needs.", "parameters": {"type": "object", "properties": {"preferences": {"type": "object", "additionalProperties": True}}, "required": ["preferences"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "learn_from_feedback", "description": "Learn travel preferences from natural user feedback after a recommendation.", "strict": True, "parameters": {"type": "object", "properties": {"feedback": {"type": "string"}}, "required": ["feedback"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "get_saved_trips", "description": "Load saved travel files for later updates or monitoring.", "strict": True, "parameters": {"type": "object", "properties": {}, "additionalProperties": False}}},
     {"type": "function", "function": {"name": "save_trip_plan", "description": "Save a confirmed or planned trip as a travel file.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "update_trip_weather", "description": "Update the weather summary of a saved trip and report whether something changed.", "strict": True, "parameters": {"type": "object", "properties": {"trip_id": {"type": "string"}, "weather_summary": {"type": "string"}}, "required": ["trip_id", "weather_summary"], "additionalProperties": False}}},
@@ -100,6 +106,7 @@ TOOLS = [
     {"type": "function", "function": {"name": "estimate_trip_budget", "description": "Estimate total trip budget from saved or selected flight, hotel, and daily-cost data.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "create_packing_list", "description": "Create a packing list based on trip weather and saved user preferences.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}, "preferences": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "calculate_risk_score", "description": "Calculate travel risk based on data completeness, alerts, and reliability.", "parameters": {"type": "object", "properties": {"trip": {"type": "object", "additionalProperties": True}}, "required": ["trip"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "find_best_travel_windows", "description": "Find the best free travel windows using Google Calendar, public holidays, weekends, and weather.", "parameters": {"type": "object", "properties": {"destination": {"type": "string"}, "earliest_date": {"type": "string"}, "latest_date": {"type": "string"}, "duration_days": {"type": "number"}, "max_results": {"type": "number"}}, "required": ["destination", "earliest_date", "latest_date", "duration_days"], "additionalProperties": False}}},
 ]
 
 

@@ -1,7 +1,6 @@
 import asyncio
 import sys
 import time
-import random
 import requests
 from bs4 import BeautifulSoup
 from services.fallback_data import FLIGHTS_BER_BCN
@@ -29,9 +28,10 @@ class FlightService:
         return self._get_fallback_flights(departure_code, arrival_code, passengers)
 
     def _get_fallback_flights(self, dep: str, arr: str, passengers: int) -> str:
-        p1 = random.randint(120, 180) * passengers
-        p2 = random.randint(45, 90) * passengers
-        p3 = random.randint(170, 250) * passengers
+        seed = sum(ord(ch) for ch in f"{dep}-{arr}-{passengers}")
+        p1 = (145 + seed % 18) * passengers
+        p2 = (62 + seed % 12) * passengers
+        p3 = (205 + seed % 24) * passengers
         airline3 = "Air France" if arr.upper() == "PAR" or arr.upper() == "CDG" else "Iberia"
         opts = [
             f"Option 1: Lufthansa | Price: {p1} € | Outbound: 2h 15m (direct) | Return: 2h 20m (direct)",

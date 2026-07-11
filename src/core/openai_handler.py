@@ -21,6 +21,7 @@ class OpenAIHandler:
         self._dispatcher = ToolDispatcher()
 
     def send_message(self, user_input: str) -> str:
+        self._clear_active_runs()
         self._client.beta.threads.messages.create(
             thread_id=self._thread_id, role="user", content=user_input
         )
@@ -29,6 +30,30 @@ class OpenAIHandler:
         )
         self._wait_for_run(run.id)
         return self._get_latest_response()
+
+    def _clear_active_runs(self) -> None:
+        try:
+            runs = self._client.beta.threads.runs.list(thread_id=self._thread_id, limit=5)
+        except Exception:
+            return
+
+        for run in runs.data:
+            if run.status in _WAITING or run.status == "requires_action":
+                started_at = time.time()
+                while time.time() - started_at < 10:
+                    current = self._client.beta.threads.runs.retrieve(
+                        thread_id=self._thread_id, run_id=run.id
+                    )
+                    if current.status in _TERMINAL:
+                        break
+                    time.sleep(0.8)
+                else:
+                    try:
+                        self._client.beta.threads.runs.cancel(
+                            thread_id=self._thread_id, run_id=run.id
+                        )
+                    except Exception:
+                        pass
 
     def _wait_for_run(self, run_id: str) -> None:
         started_at = time.time()

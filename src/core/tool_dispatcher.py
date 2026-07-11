@@ -9,6 +9,7 @@ from services.memory_service import MemoryService
 from services.monitoring_service import MonitoringService
 from services.quality_service import QualityService
 from services.travel_agency_service import TravelAgencyService
+from services.travel_window_service import TravelWindowService
 
 
 class ToolDispatcher:
@@ -23,6 +24,7 @@ class ToolDispatcher:
         self._monitoring = MonitoringService()
         self._quality = QualityService()
         self._agency = TravelAgencyService()
+        self._travel_windows = TravelWindowService()
         self._handlers = {
             "get_current_date":     self._get_date,
             "get_weather_forecast": self._get_weather,
@@ -33,6 +35,7 @@ class ToolDispatcher:
             "get_calendar_events":  self._get_calendar,
             "get_user_memory":      self._get_user_memory,
             "save_user_memory":     self._save_user_memory,
+            "learn_from_feedback":  self._learn_from_feedback,
             "get_saved_trips":      self._get_saved_trips,
             "save_trip_plan":       self._save_trip_plan,
             "update_trip_weather":  self._update_trip_weather,
@@ -41,6 +44,7 @@ class ToolDispatcher:
             "estimate_trip_budget": self._estimate_trip_budget,
             "create_packing_list":  self._create_packing_list,
             "calculate_risk_score": self._calculate_risk_score,
+            "find_best_travel_windows": self._find_best_travel_windows,
         }
 
     def dispatch(self, function_name: str, arguments: dict) -> str:
@@ -103,6 +107,9 @@ class ToolDispatcher:
     def _save_user_memory(self, args):
         return json.dumps(self._memory.update_user_memory(args["preferences"]), ensure_ascii=False)
 
+    def _learn_from_feedback(self, args):
+        return json.dumps(self._memory.learn_from_feedback(args["feedback"]), ensure_ascii=False)
+
     def _get_saved_trips(self, _args):
         return json.dumps(self._memory.get_saved_trips(), ensure_ascii=False)
 
@@ -132,3 +139,15 @@ class ToolDispatcher:
 
     def _calculate_risk_score(self, args):
         return json.dumps(self._agency.risk_score(args["trip"]), ensure_ascii=False)
+
+    def _find_best_travel_windows(self, args):
+        return json.dumps(
+            self._travel_windows.find_best_windows(
+                destination=args["destination"],
+                earliest_date=args["earliest_date"],
+                latest_date=args["latest_date"],
+                duration_days=int(args["duration_days"]),
+                max_results=int(args.get("max_results", 3)),
+            ),
+            ensure_ascii=False,
+        )

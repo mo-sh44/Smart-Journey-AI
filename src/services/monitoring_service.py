@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from services.flight_service import FlightService
@@ -50,9 +51,12 @@ class MonitoringService:
             "changes": changes,
             "message": self._message(changes),
             "recommendation": self._recommendation(changes),
-            "risk": self.agency.risk_score(preview_trip),
-            "budget": self.agency.estimate_budget(preview_trip),
+            "action_plan": self._action_plan(changes),
+            "next_action": self._next_action(changes),
         }
+        current_risk_trip = {**preview_trip, "alerts": [alert]}
+        alert["risk"] = self.agency.risk_score(current_risk_trip)
+        alert["budget"] = self.agency.estimate_budget(preview_trip)
 
         alerts = trip.get("alerts", [])
         alerts.append(alert)
@@ -78,9 +82,23 @@ class MonitoringService:
         old_clean = (old_value or "").strip()
         new_clean = (new_value or "").strip()
         if not old_clean:
-            return [{"type": label, "status": "new_snapshot", "summary": f"{label.title()} snapshot saved."}]
+            return [{
+                "type": label,
+                "status": "new_snapshot",
+                "summary": f"{label.title()} snapshot saved.",
+                "before": "No previous snapshot.",
+                "after": self._shorten(new_clean),
+                "impact": "The travel file now has a baseline for future monitoring.",
+            }]
         if old_clean != new_clean:
-            return [{"type": label, "status": "changed", "summary": f"{label.title()} data changed."}]
+            return [{
+                "type": label,
+                "status": "changed",
+                "summary": self._summary(label, old_clean, new_clean),
+                "before": self._shorten(old_clean),
+                "after": self._shorten(new_clean),
+                "impact": self._impact(label, old_clean, new_clean),
+            }]
         return []
 
     def _message(self, changes: list[dict]) -> str:
@@ -101,3 +119,62 @@ class MonitoringService:
         if "hotels" in changed:
             suggestions.append("Check whether the saved hotel is still the best value.")
         return " ".join(suggestions)
+
+    def _action_plan(self, changes: list[dict]) -> list[str]:
+        if not changes:
+            return [
+                "Keep the current travel file.",
+                "Run the next monitoring check before final confirmation.",
+            ]
+
+        changed = {change["type"] for change in changes}
+        actions = ["Review the refreshed travel file before sending a final confirmation."]
+        if "weather" in changed:
+            actions.append("Adjust the daily itinerary and add indoor alternatives if needed.")
+        if "flights" in changed:
+            actions.append("Compare the new flight options and decide whether the selected flight should change.")
+        if "hotels" in changed:
+            actions.append("Compare the new hotel options against the saved hotel preference and budget.")
+        actions.append("After approval, send an updated email confirmation with the current details.")
+        return actions
+
+    def _next_action(self, changes: list[dict]) -> str:
+        if not changes:
+            return "No user action required."
+        changed = {change["type"] for change in changes}
+        if "flights" in changed or "hotels" in changed:
+            return "Ask the user whether Smart Journey AI should update the selected flight or hotel."
+        if "weather" in changed:
+            return "Ask the user whether the itinerary should be adjusted for the new weather."
+        return "Ask the user whether the refreshed travel file should be confirmed."
+
+    def _summary(self, label: str, old_value: str, new_value: str) -> str:
+        old_price = self._first_price(old_value)
+        new_price = self._first_price(new_value)
+        if old_price and new_price:
+            difference = new_price - old_price
+            direction = "increased" if difference > 0 else "decreased"
+            if difference == 0:
+                return f"{label.title()} details changed, but the first visible price stayed at {new_price} EUR."
+            return f"{label.title()} price {direction} by {abs(difference)} EUR ({old_price} EUR -> {new_price} EUR)."
+        return f"{label.title()} details changed."
+
+    def _impact(self, label: str, old_value: str, new_value: str) -> str:
+        old_price = self._first_price(old_value)
+        new_price = self._first_price(new_value)
+        if old_price and new_price:
+            if new_price < old_price:
+                return f"Good news: the first {label} option is now cheaper."
+            if new_price > old_price:
+                return f"Attention: the first {label} option is now more expensive."
+        if label == "weather":
+            return "The itinerary should be reviewed for outdoor and indoor activities."
+        return "The saved travel file was refreshed with the latest available data."
+
+    def _first_price(self, text: str) -> int:
+        match = re.search(r"(\d+)\s*(?:€|EUR)", text or "")
+        return int(match.group(1)) if match else 0
+
+    def _shorten(self, text: str) -> str:
+        text = " ".join((text or "").split())
+        return text if len(text) <= 240 else text[:237] + "..."
