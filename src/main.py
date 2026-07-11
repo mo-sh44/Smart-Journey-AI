@@ -151,6 +151,24 @@ def trip_label(trip):
     return f"{trip.get('destination', 'Trip')} · {trip.get('start_date', '?')} to {trip.get('end_date', '?')}"
 
 
+def latest_unique_trips(trips):
+    unique = {}
+    for trip in trips:
+        key = (
+            trip.get("destination", "Trip"),
+            trip.get("start_date", "?"),
+            trip.get("end_date", "?"),
+        )
+        existing = unique.get(key)
+        if not existing or trip.get("updated_at", "") > existing.get("updated_at", ""):
+            unique[key] = trip
+    return sorted(
+        unique.values(),
+        key=lambda item: item.get("updated_at", item.get("created_at", "")),
+        reverse=True,
+    )
+
+
 def trip_internal_context(trip):
     return (
         "Nutze diese intern gespeicherte Reiseakte als Kontext. Zeige dem Nutzer keine Trip ID.\n"
@@ -387,13 +405,7 @@ if mode == "OpenAI Assistant" and "handler" not in st.session_state:
 
 with tab_trips:
     st.subheader("Travel files")
-    st.caption("This is the saved customer travel file. It is stored locally in data/saved_trips.json and shown below as the current travel plan.")
-    st.markdown(
-        "<div class='context-note'><strong>What happens here?</strong> A travel file is not a PDF yet. "
-        "It is a saved customer case inside the app. Later it can be used for monitoring, email confirmation, calendar attachment, and follow-up chat.</div>",
-        unsafe_allow_html=True,
-    )
-    trips = memory_service.get_saved_trips()
+    trips = latest_unique_trips(memory_service.get_saved_trips())
     if not trips:
         st.info("No travel files saved yet. Confirm a trip through the assistant to create the first travel file.")
     else:
@@ -426,8 +438,7 @@ with tab_trips:
 
 with tab_alerts:
     st.subheader("Monitoring and updates")
-    st.caption("This is the active monitoring view: it compares the saved travel file with fresh data and recommends the next action.")
-    trips = memory_service.get_saved_trips()
+    trips = latest_unique_trips(memory_service.get_saved_trips())
     if not trips:
         st.info("No trip available for monitoring yet.")
     else:
