@@ -393,15 +393,9 @@ with tab_trips:
         "It is a saved customer case inside the app. Later it can be used for monitoring, email confirmation, calendar attachment, and follow-up chat.</div>",
         unsafe_allow_html=True,
     )
-    if st.session_state.pop("travel_file_created_notice", False):
-        st.success("Sample travel file was saved and opened below.")
     trips = memory_service.get_saved_trips()
-    if st.button("Create sample travel file", key="create_demo_main", help="Creates and opens a saved Barcelona travel file for the presentation demo."):
-        trip = create_demo_trip()
-        st.session_state.travel_file_created_notice = True
-        st.rerun()
     if not trips:
-        st.info("No travel files saved yet. Create a demo file or confirm a trip through the assistant.")
+        st.info("No travel files saved yet. Confirm a trip through the assistant to create the first travel file.")
     else:
         trip_options = [
             (f"{index + 1}. {trip_label(trip)}", trip["id"])
