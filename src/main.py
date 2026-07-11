@@ -378,24 +378,14 @@ with st.sidebar:
 st.markdown("<h1 class='hero'>Smart Journey AI</h1><p class='sub'>From chatbot to personal travel agency: memory, tools, travel files, and live updates.</p>", unsafe_allow_html=True)
 st.divider()
 
-pages = ["Assistant", "Travel files", "Best travel window", "Monitoring"]
-if "page" not in st.session_state:
-    st.session_state.page = "Assistant"
-current_page = st.radio(
-    "Navigation",
-    pages,
-    index=pages.index(st.session_state.page),
-    horizontal=True,
-    label_visibility="collapsed",
-)
-st.session_state.page = current_page
+tab_chat, tab_trips, tab_windows, tab_alerts = st.tabs(["Assistant", "Travel files", "Best travel window", "Monitoring"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if mode == "OpenAI Assistant" and "handler" not in st.session_state:
     st.session_state.handler = OpenAIHandler()
 
-if st.session_state.page == "Travel files":
+with tab_trips:
     st.subheader("Travel files")
     st.caption("This is the saved customer travel file. It is stored locally in data/saved_trips.json and shown below as the current travel plan.")
     st.markdown(
@@ -433,7 +423,6 @@ if st.session_state.page == "Travel files":
             if top_cols[0].button("Chat about this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
-                st.session_state.page = "Assistant"
                 st.rerun()
             if top_cols[1].button("Check this trip now", use_container_width=True):
                 with st.spinner("Refreshing this travel file..."):
@@ -441,7 +430,7 @@ if st.session_state.page == "Travel files":
                 st.rerun()
             render_trip_card(selected_trip)
 
-if st.session_state.page == "Monitoring":
+with tab_alerts:
     st.subheader("Monitoring and updates")
     st.caption("This is the active monitoring view: it compares the saved travel file with fresh data and recommends the next action.")
     trips = memory_service.get_saved_trips()
@@ -477,7 +466,6 @@ if st.session_state.page == "Monitoring":
             if st.button("Open assistant chat for this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
-                st.session_state.page = "Assistant"
                 st.rerun()
             latest_alerts = selected_trip.get("alerts", [])
             if latest_alerts:
@@ -485,7 +473,7 @@ if st.session_state.page == "Monitoring":
             with st.expander("Open refreshed travel file"):
                 render_trip_card(selected_trip, show_packing=False)
 
-if st.session_state.page == "Best travel window":
+with tab_windows:
     st.subheader("Best travel window")
     st.caption("Use this when the user does not know exact dates. The agent combines calendar availability, vacation/free entries, public holidays, weekends, and weather.")
     st.markdown(
@@ -544,7 +532,7 @@ if st.session_state.page == "Best travel window":
             for item in learned:
                 st.write(f"- {item}")
 
-if st.session_state.page == "Assistant":
+with tab_chat:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -578,7 +566,7 @@ def process(user_input: str):
         st.markdown(response)
 
 
-if st.session_state.page == "Assistant":
+with tab_chat:
     if "pending" in st.session_state:
         process(st.session_state.pop("pending"))
         st.rerun()
