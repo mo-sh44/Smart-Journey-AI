@@ -36,7 +36,6 @@ class HotelService:
             return self._get_fallback_hotels(city, adults, rooms)
 
     def _get_fallback_hotels(self, city: str, adults: int, rooms: int) -> str:
-        import random
         hotel_db = {
             "paris": ["The Ritz Paris", "Hotel Pullman Paris Tour Eiffel", "Le Bristol Paris"],
             "barcelona": ["W Barcelona", "Hotel Arts Barcelona", "Catalonia Barcelona Plaza"],
@@ -50,10 +49,11 @@ class HotelService:
             f"{city} Central View Inn"
         ])
         results = []
+        seed = sum(ord(ch) for ch in f"{city}-{adults}-{rooms}")
         for i, name in enumerate(names, start=1):
-            price = random.randint(95, 260) * rooms
-            rating = round(random.uniform(8.2, 9.4), 1)
-            distance = round(random.uniform(0.5, 2.2), 1)
+            price = (110 + ((seed + i * 37) % 115)) * rooms
+            rating = round(8.4 + ((seed + i * 5) % 9) / 10, 1)
+            distance = round(0.6 + ((seed + i * 3) % 14) / 10, 1)
             results.append(
                 f"Hotel {i}: {name} | Preis: {price} €/Nacht | Bewertung: {rating} | Entfernung: {distance} km"
             )

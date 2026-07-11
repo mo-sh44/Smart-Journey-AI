@@ -53,9 +53,10 @@ class MonitoringService:
             "recommendation": self._recommendation(changes),
             "action_plan": self._action_plan(changes),
             "next_action": self._next_action(changes),
-            "risk": self.agency.risk_score(preview_trip),
-            "budget": self.agency.estimate_budget(preview_trip),
         }
+        current_risk_trip = {**preview_trip, "alerts": [alert]}
+        alert["risk"] = self.agency.risk_score(current_risk_trip)
+        alert["budget"] = self.agency.estimate_budget(preview_trip)
 
         alerts = trip.get("alerts", [])
         alerts.append(alert)

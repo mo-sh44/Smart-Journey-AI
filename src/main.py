@@ -126,7 +126,7 @@ AUTO_CHECK_INTERVAL_MINUTES = 30
 
 
 def create_demo_trip():
-    return memory_service.save_trip(
+    trip = memory_service.save_trip(
         {
             "destination": "Barcelona",
             "departure_code": "BER",
@@ -143,6 +143,8 @@ def create_demo_trip():
             "status": "confirmed",
         }
     )
+    st.session_state.selected_travel_file_id = trip["id"]
+    return trip
 
 
 def trip_label(trip):
@@ -376,19 +378,37 @@ with st.sidebar:
 st.markdown("<h1 class='hero'>Smart Journey AI</h1><p class='sub'>From chatbot to personal travel agency: memory, tools, travel files, and live updates.</p>", unsafe_allow_html=True)
 st.divider()
 
-tab_chat, tab_trips, tab_windows, tab_alerts = st.tabs(["Assistant", "Travel files", "Best travel window", "Monitoring"])
+pages = ["Assistant", "Travel files", "Best travel window", "Monitoring"]
+if "page" not in st.session_state:
+    st.session_state.page = "Assistant"
+current_page = st.radio(
+    "Navigation",
+    pages,
+    index=pages.index(st.session_state.page),
+    horizontal=True,
+    label_visibility="collapsed",
+)
+st.session_state.page = current_page
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if mode == "OpenAI Assistant" and "handler" not in st.session_state:
     st.session_state.handler = OpenAIHandler()
 
-with tab_trips:
+if st.session_state.page == "Travel files":
     st.subheader("Travel files")
-    st.caption("This is the saved customer travel file: current plan, selected options, budget, packing list, and personalization.")
+    st.caption("This is the saved customer travel file. It is stored locally in data/saved_trips.json and shown below as the current travel plan.")
+    st.markdown(
+        "<div class='context-note'><strong>What happens here?</strong> A travel file is not a PDF yet. "
+        "It is a saved customer case inside the app. Later it can be used for monitoring, email confirmation, calendar attachment, and follow-up chat.</div>",
+        unsafe_allow_html=True,
+    )
+    if st.session_state.pop("travel_file_created_notice", False):
+        st.success("Sample travel file was saved and opened below.")
     trips = memory_service.get_saved_trips()
-    if st.button("Create Barcelona demo file", key="create_demo_main"):
-        create_demo_trip()
+    if st.button("Create sample travel file", key="create_demo_main", help="Creates and opens a saved Barcelona travel file for the presentation demo."):
+        trip = create_demo_trip()
+        st.session_state.travel_file_created_notice = True
         st.rerun()
     if not trips:
         st.info("No travel files saved yet. Create a demo file or confirm a trip through the assistant.")
@@ -397,26 +417,31 @@ with tab_trips:
             (f"{index + 1}. {trip_label(trip)}", trip["id"])
             for index, trip in enumerate(reversed(trips))
         ]
-        selected_trip_label = st.selectbox("Open travel file", [label for label, _trip_id in trip_options], key="travel_file_select")
+        labels = [label for label, _trip_id in trip_options]
+        default_index = 0
+        if st.session_state.get("selected_travel_file_id"):
+            for index, (_label, trip_id) in enumerate(trip_options):
+                if trip_id == st.session_state.selected_travel_file_id:
+                    default_index = index
+                    break
+        selected_trip_label = st.selectbox("Open travel file", labels, index=default_index, key="travel_file_select")
         selected_trip_id = dict(trip_options)[selected_trip_label]
+        st.session_state.selected_travel_file_id = selected_trip_id
         selected_trip = memory_service.get_trip(selected_trip_id)
         if selected_trip:
-            top_cols = st.columns([1, 1, 1])
+            top_cols = st.columns([1, 1])
             if top_cols[0].button("Chat about this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
+                st.session_state.page = "Assistant"
                 st.rerun()
             if top_cols[1].button("Check this trip now", use_container_width=True):
                 with st.spinner("Refreshing this travel file..."):
-                    result = monitoring_service.check_trip_updates(selected_trip["id"])
-                render_alert_summary(result.get("alert", {}))
-                st.rerun()
-            if top_cols[2].button("Duplicate demo file", use_container_width=True):
-                create_demo_trip()
+                    monitoring_service.check_trip_updates(selected_trip["id"])
                 st.rerun()
             render_trip_card(selected_trip)
 
-with tab_alerts:
+if st.session_state.page == "Monitoring":
     st.subheader("Monitoring and updates")
     st.caption("This is the active monitoring view: it compares the saved travel file with fresh data and recommends the next action.")
     trips = memory_service.get_saved_trips()
@@ -445,14 +470,14 @@ with tab_alerts:
                 st.info(f"Automatic update: {auto_alert.get('message')}")
         if st.button("Check updates now", type="primary"):
             with st.spinner("Checking weather, flight, and hotel updates..."):
-                result = monitoring_service.check_trip_updates(options[selected_label])
-            alert = result.get("alert", {})
-            render_alert_summary(alert)
+                monitoring_service.check_trip_updates(options[selected_label])
+            st.rerun()
         selected_trip = memory_service.get_trip(options[selected_label])
         if selected_trip:
             if st.button("Open assistant chat for this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
+                st.session_state.page = "Assistant"
                 st.rerun()
             latest_alerts = selected_trip.get("alerts", [])
             if latest_alerts:
@@ -460,7 +485,7 @@ with tab_alerts:
             with st.expander("Open refreshed travel file"):
                 render_trip_card(selected_trip, show_packing=False)
 
-with tab_windows:
+if st.session_state.page == "Best travel window":
     st.subheader("Best travel window")
     st.caption("Use this when the user does not know exact dates. The agent combines calendar availability, vacation/free entries, public holidays, weekends, and weather.")
     st.markdown(
@@ -519,7 +544,7 @@ with tab_windows:
             for item in learned:
                 st.write(f"- {item}")
 
-with tab_chat:
+if st.session_state.page == "Assistant":
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -553,7 +578,7 @@ def process(user_input: str):
         st.markdown(response)
 
 
-with tab_chat:
+if st.session_state.page == "Assistant":
     if "pending" in st.session_state:
         process(st.session_state.pop("pending"))
         st.rerun()
