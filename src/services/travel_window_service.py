@@ -34,7 +34,12 @@ class TravelWindowService:
             calendar_warning = "Calendar returned an error, so the agent used an empty-calendar fallback."
             calendar_data = {"personal": [], "holidays": []}
 
-        busy_dates = self._collect_dates(calendar_data.get("personal", []))
+        busy_dates = self._collect_dates(
+            [event for event in calendar_data.get("personal", []) if event.get("availability") != "available"]
+        )
+        preferred_dates = self._collect_dates(
+            [event for event in calendar_data.get("personal", []) if event.get("availability") == "available"]
+        )
         holiday_dates = self._collect_dates(calendar_data.get("holidays", []))
         candidates = []
 
@@ -43,7 +48,7 @@ class TravelWindowService:
             window_days = [current + timedelta(days=offset) for offset in range(duration)]
             if not any(day in busy_dates for day in window_days):
                 candidates.append(
-                    self._score_window(current, duration, window_days, holiday_dates)
+                    self._score_window(current, duration, window_days, holiday_dates, preferred_dates)
                 )
             current += timedelta(days=1)
 
@@ -65,6 +70,7 @@ class TravelWindowService:
             "duration_days": duration,
             "calendar_summary": {
                 "busy_days": len(busy_dates),
+                "preferred_days": len(preferred_dates),
                 "holiday_days": len(holiday_dates),
                 "warning": calendar_warning,
             },
@@ -72,15 +78,16 @@ class TravelWindowService:
             "message": "Best travel windows were calculated from calendar availability, holidays, weekends, and weather.",
         }
 
-    def _score_window(self, start, duration, window_days, holiday_dates):
+    def _score_window(self, start, duration, window_days, holiday_dates, preferred_dates):
         weekend_days = sum(1 for day in window_days if day.weekday() >= 5)
         holidays_inside = sum(1 for day in window_days if day in holiday_dates)
+        preferred_inside = sum(1 for day in window_days if day in preferred_dates)
         adjacent_holidays = sum(
             1
             for day in [start - timedelta(days=1), start + timedelta(days=duration)]
             if day in holiday_dates
         )
-        score = 50 + weekend_days * 5 + holidays_inside * 10 + adjacent_holidays * 6
+        score = 50 + weekend_days * 5 + holidays_inside * 10 + preferred_inside * 12 + adjacent_holidays * 6
         end = start + timedelta(days=duration - 1)
         return {
             "start_date": start.isoformat(),
@@ -88,12 +95,15 @@ class TravelWindowService:
             "score": score,
             "weekend_days": weekend_days,
             "holidays_inside": holidays_inside,
+            "preferred_days": preferred_inside,
             "adjacent_holidays": adjacent_holidays,
-            "reason": self._reason(weekend_days, holidays_inside, adjacent_holidays),
+            "reason": self._reason(weekend_days, holidays_inside, preferred_inside, adjacent_holidays),
         }
 
-    def _reason(self, weekend_days, holidays_inside, adjacent_holidays):
+    def _reason(self, weekend_days, holidays_inside, preferred_inside, adjacent_holidays):
         reasons = ["No personal calendar conflict was found."]
+        if preferred_inside:
+            reasons.append(f"{preferred_inside} day(s) are marked as vacation/free time in the calendar.")
         if weekend_days:
             reasons.append(f"{weekend_days} weekend day(s) reduce required vacation days.")
         if holidays_inside:

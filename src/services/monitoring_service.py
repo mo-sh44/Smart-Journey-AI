@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from services.flight_service import FlightService
@@ -80,9 +81,23 @@ class MonitoringService:
         old_clean = (old_value or "").strip()
         new_clean = (new_value or "").strip()
         if not old_clean:
-            return [{"type": label, "status": "new_snapshot", "summary": f"{label.title()} snapshot saved."}]
+            return [{
+                "type": label,
+                "status": "new_snapshot",
+                "summary": f"{label.title()} snapshot saved.",
+                "before": "No previous snapshot.",
+                "after": self._shorten(new_clean),
+                "impact": "The travel file now has a baseline for future monitoring.",
+            }]
         if old_clean != new_clean:
-            return [{"type": label, "status": "changed", "summary": f"{label.title()} data changed."}]
+            return [{
+                "type": label,
+                "status": "changed",
+                "summary": self._summary(label, old_clean, new_clean),
+                "before": self._shorten(old_clean),
+                "after": self._shorten(new_clean),
+                "impact": self._impact(label, old_clean, new_clean),
+            }]
         return []
 
     def _message(self, changes: list[dict]) -> str:
@@ -131,3 +146,34 @@ class MonitoringService:
         if "weather" in changed:
             return "Ask the user whether the itinerary should be adjusted for the new weather."
         return "Ask the user whether the refreshed travel file should be confirmed."
+
+    def _summary(self, label: str, old_value: str, new_value: str) -> str:
+        old_price = self._first_price(old_value)
+        new_price = self._first_price(new_value)
+        if old_price and new_price:
+            difference = new_price - old_price
+            direction = "increased" if difference > 0 else "decreased"
+            if difference == 0:
+                return f"{label.title()} details changed, but the first visible price stayed at {new_price} EUR."
+            return f"{label.title()} price {direction} by {abs(difference)} EUR ({old_price} EUR -> {new_price} EUR)."
+        return f"{label.title()} details changed."
+
+    def _impact(self, label: str, old_value: str, new_value: str) -> str:
+        old_price = self._first_price(old_value)
+        new_price = self._first_price(new_value)
+        if old_price and new_price:
+            if new_price < old_price:
+                return f"Good news: the first {label} option is now cheaper."
+            if new_price > old_price:
+                return f"Attention: the first {label} option is now more expensive."
+        if label == "weather":
+            return "The itinerary should be reviewed for outdoor and indoor activities."
+        return "The saved travel file was refreshed with the latest available data."
+
+    def _first_price(self, text: str) -> int:
+        match = re.search(r"(\d+)\s*(?:€|EUR)", text or "")
+        return int(match.group(1)) if match else 0
+
+    def _shorten(self, text: str) -> str:
+        text = " ".join((text or "").split())
+        return text if len(text) <= 240 else text[:237] + "..."

@@ -1,5 +1,6 @@
 import os
 import datetime
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -36,7 +37,14 @@ class CalendarService:
             for event in personal_items:
                 if event.get("transparency", "opaque") == "opaque":
                     start = event["start"].get("dateTime", event["start"].get("date"))
-                    result["personal"].append({"date": start, "title": event.get("summary", "Untitled")})
+                    title = event.get("summary", "Untitled")
+                    result["personal"].append(
+                        {
+                            "date": start,
+                            "title": title,
+                            "availability": self._classify_event(title),
+                        }
+                    )
 
             holiday_items = service.events().list(
                 calendarId="de.german#holiday@group.v.calendar.google.com",
@@ -60,10 +68,23 @@ class CalendarService:
             creds = Credentials.from_authorized_user_file(self.token_path, SCOPES)
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except RefreshError:
+                    if os.path.exists(self.token_path):
+                        os.remove(self.token_path)
+                    flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+                    creds = flow.run_local_server(port=0)
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 creds = flow.run_local_server(port=0)
             with open(self.token_path, "w") as f:
                 f.write(creds.to_json())
         return creds
+
+    def _classify_event(self, title: str) -> str:
+        text = (title or "").lower()
+        available_words = ["urlaub", "frei", "ferien", "vacation", "holiday", "available", "reisezeit"]
+        if any(word in text for word in available_words):
+            return "available"
+        return "busy"
