@@ -1,6 +1,12 @@
 import json
 import os
+import sys
 import time
+
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 import openai
 from dotenv import load_dotenv
@@ -84,10 +90,10 @@ class OpenAIHandler:
         for call in pending_calls:
             fn_name = call.function.name
             fn_args = json.loads(call.function.arguments)
-            print(f"Tool call: {fn_name}({fn_args})")
+            print(f"Tool call: {fn_name}({fn_args})".encode('utf-8', errors='replace').decode('utf-8', errors='replace'))
             result = self._dispatcher.dispatch(fn_name, fn_args)
             preview = str(result).replace("\n", " ")[:500]
-            print(f"Tool result: {preview}")
+            print(f"Tool result: {preview}".encode('utf-8', errors='replace').decode('utf-8', errors='replace'))
             outputs.append({"tool_call_id": call.id, "output": str(result)})
         self._client.beta.threads.runs.submit_tool_outputs(
             thread_id=self._thread_id, run_id=run_id, tool_outputs=outputs
