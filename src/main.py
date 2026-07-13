@@ -151,6 +151,24 @@ def trip_label(trip):
     return f"{trip.get('destination', 'Trip')} · {trip.get('start_date', '?')} to {trip.get('end_date', '?')}"
 
 
+def latest_unique_trips(trips):
+    unique = {}
+    for trip in trips:
+        key = (
+            trip.get("destination", "Trip"),
+            trip.get("start_date", "?"),
+            trip.get("end_date", "?"),
+        )
+        existing = unique.get(key)
+        if not existing or trip.get("updated_at", "") > existing.get("updated_at", ""):
+            unique[key] = trip
+    return sorted(
+        unique.values(),
+        key=lambda item: item.get("updated_at", item.get("created_at", "")),
+        reverse=True,
+    )
+
+
 def trip_internal_context(trip):
     return (
         "Nutze diese intern gespeicherte Reiseakte als Kontext. Zeige dem Nutzer keine Trip ID.\n"
@@ -378,40 +396,18 @@ with st.sidebar:
 st.markdown("<h1 class='hero'>Smart Journey AI</h1><p class='sub'>From chatbot to personal travel agency: memory, tools, travel files, and live updates.</p>", unsafe_allow_html=True)
 st.divider()
 
-pages = ["Assistant", "Travel files", "Best travel window", "Monitoring"]
-if "page" not in st.session_state:
-    st.session_state.page = "Assistant"
-current_page = st.radio(
-    "Navigation",
-    pages,
-    index=pages.index(st.session_state.page),
-    horizontal=True,
-    label_visibility="collapsed",
-)
-st.session_state.page = current_page
+tab_chat, tab_trips, tab_windows, tab_alerts = st.tabs(["Assistant", "Travel files", "Best travel window", "Monitoring"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if mode == "OpenAI Assistant" and "handler" not in st.session_state:
     st.session_state.handler = OpenAIHandler()
 
-if st.session_state.page == "Travel files":
+with tab_trips:
     st.subheader("Travel files")
-    st.caption("This is the saved customer travel file. It is stored locally in data/saved_trips.json and shown below as the current travel plan.")
-    st.markdown(
-        "<div class='context-note'><strong>What happens here?</strong> A travel file is not a PDF yet. "
-        "It is a saved customer case inside the app. Later it can be used for monitoring, email confirmation, calendar attachment, and follow-up chat.</div>",
-        unsafe_allow_html=True,
-    )
-    if st.session_state.pop("travel_file_created_notice", False):
-        st.success("Sample travel file was saved and opened below.")
-    trips = memory_service.get_saved_trips()
-    if st.button("Create sample travel file", key="create_demo_main", help="Creates and opens a saved Barcelona travel file for the presentation demo."):
-        trip = create_demo_trip()
-        st.session_state.travel_file_created_notice = True
-        st.rerun()
+    trips = latest_unique_trips(memory_service.get_saved_trips())
     if not trips:
-        st.info("No travel files saved yet. Create a demo file or confirm a trip through the assistant.")
+        st.info("No travel files saved yet. Confirm a trip through the assistant to create the first travel file.")
     else:
         trip_options = [
             (f"{index + 1}. {trip_label(trip)}", trip["id"])
@@ -429,22 +425,15 @@ if st.session_state.page == "Travel files":
         st.session_state.selected_travel_file_id = selected_trip_id
         selected_trip = memory_service.get_trip(selected_trip_id)
         if selected_trip:
-            top_cols = st.columns([1, 1])
-            if top_cols[0].button("Chat about this trip", use_container_width=True):
+            if st.button("Chat about this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
-                st.session_state.page = "Assistant"
-                st.rerun()
-            if top_cols[1].button("Check this trip now", use_container_width=True):
-                with st.spinner("Refreshing this travel file..."):
-                    monitoring_service.check_trip_updates(selected_trip["id"])
                 st.rerun()
             render_trip_card(selected_trip)
 
-if st.session_state.page == "Monitoring":
+with tab_alerts:
     st.subheader("Monitoring and updates")
-    st.caption("This is the active monitoring view: it compares the saved travel file with fresh data and recommends the next action.")
-    trips = memory_service.get_saved_trips()
+    trips = latest_unique_trips(memory_service.get_saved_trips())
     if not trips:
         st.info("No trip available for monitoring yet.")
     else:
@@ -477,7 +466,6 @@ if st.session_state.page == "Monitoring":
             if st.button("Open assistant chat for this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
-                st.session_state.page = "Assistant"
                 st.rerun()
             latest_alerts = selected_trip.get("alerts", [])
             if latest_alerts:
@@ -485,7 +473,7 @@ if st.session_state.page == "Monitoring":
             with st.expander("Open refreshed travel file"):
                 render_trip_card(selected_trip, show_packing=False)
 
-if st.session_state.page == "Best travel window":
+with tab_windows:
     st.subheader("Best travel window")
     st.caption("Use this when the user does not know exact dates. The agent combines calendar availability, vacation/free entries, public holidays, weekends, and weather.")
     st.markdown(
@@ -544,7 +532,7 @@ if st.session_state.page == "Best travel window":
             for item in learned:
                 st.write(f"- {item}")
 
-if st.session_state.page == "Assistant":
+with tab_chat:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -578,7 +566,7 @@ def process(user_input: str):
         st.markdown(response)
 
 
-if st.session_state.page == "Assistant":
+with tab_chat:
     if "pending" in st.session_state:
         process(st.session_state.pop("pending"))
         st.rerun()
