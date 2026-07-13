@@ -425,14 +425,9 @@ with tab_trips:
         st.session_state.selected_travel_file_id = selected_trip_id
         selected_trip = memory_service.get_trip(selected_trip_id)
         if selected_trip:
-            top_cols = st.columns([1, 1])
-            if top_cols[0].button("Chat about this trip", use_container_width=True):
+            if st.button("Chat about this trip", use_container_width=True):
                 st.session_state.active_trip_context = trip_internal_context(selected_trip)
                 st.session_state.pending = f"Ich habe eine Frage zu meiner {selected_trip.get('destination', 'Reise')}-Reise."
-                st.rerun()
-            if top_cols[1].button("Check this trip now", use_container_width=True):
-                with st.spinner("Refreshing this travel file..."):
-                    monitoring_service.check_trip_updates(selected_trip["id"])
                 st.rerun()
             render_trip_card(selected_trip)
 
